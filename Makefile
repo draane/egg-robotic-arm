@@ -1,5 +1,5 @@
 build: bin bin/main.o
-	gcc bin/main.o bin/manager_io.o -o bin/main.out
+	gcc bin/main.o bin/manager_io.o bin/manager_output.o -o bin/main.out
 
 bin/main.o: bin/manager_io.o
 	gcc -c src/main.c -o bin/main.o
@@ -18,3 +18,5 @@ bin:
 
 clean:
 	rm -rfv bin/
+
+rebuild: clean build
