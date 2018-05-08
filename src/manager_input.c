@@ -3,6 +3,7 @@
 #include<unistd.h>
 #include<signal.h>
 #include<sys/types.h>
+#include"manager_input.h"
 
 #define MAX_PINS 8
 #define DEBUG 1
