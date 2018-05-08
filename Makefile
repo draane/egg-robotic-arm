@@ -18,5 +18,3 @@ bin:
 
 clean:
 	rm -rfv bin/
-
-rebuild: clean build
