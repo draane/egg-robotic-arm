@@ -16,6 +16,7 @@ void communicate_with_manager(int pipe_write, int pipe_read) {
      */
     char msg_received[100];
 
+    // TODO: must be eliminated.
     srand(time(NULL));
     while (1) {
         // 0 Wait for the start communication message from manager ("start").
@@ -52,7 +53,7 @@ void communicate_with_manager(int pipe_write, int pipe_read) {
 }
 void start_input(int pipe_write, int pipe_read){
     // Parameters passed are the ends of the pipe that the method will use.
-    // Other ones have already been close.
+    // Other ones have already been close by the manager process.
 
     // DO SOME STUFF HERE TO INITIALIZE ALL INPUT PROCESSES!
 

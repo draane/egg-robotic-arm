@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
 #include "manager_output.h"
 #include "manager_input.h"
@@ -11,7 +12,10 @@
 #define MAX_INFO_TO_SEND_SIZE 100
 
 void trigger_input(int pipe_input_write){
-    fprintf(stdout, "Message to send\n");
+    /*
+     * 0) send "start" command to input.
+     */
+    fprintf(stdout, "Message to send in input.\n");
     write(pipe_input_write, "start\0", MAX_INFO_TO_SEND_SIZE);
 }
 
@@ -25,6 +29,59 @@ void read_input(int pipe_input_read, int pipe_input_write){
     }
 }
 
+void trigger_output(int pipe_output_write){
+    /*
+     * 0) send "start" command to output.
+     */
+    fprintf(stdout, "Message to send in output.\n");
+    write(pipe_output_write, "start\0", MAX_INFO_TO_SEND_SIZE);
+}
+
+void write_output(int pipe_output_read, int pipe_output_write){
+    // TODO: needs to take as parameter the information to pass to the output process.
+    /*
+     * Actions to perform:
+     * 0) Wait for the output "akc".
+     * 1) Write in output the information.
+     * 2) Write in output the "finish_output" command and read ack.
+     */
+    char msg_received[100];
+
+    // TODO: must be deleted!
+    srand(time(NULL));
+
+    // 0) Wait for the output "akc".
+    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+    if (strcmp(msg_received, "ack\0") == 0){
+
+        // 1) Write in output the information.
+        char msg_to_send[MAX_INFO_TO_SEND_SIZE];
+        strcpy(msg_to_send, "Hello, I'm the manager_process\0");
+        int num_messages_to_send = (rand() % 4) + 1;
+        for (int i = 0; i<num_messages_to_send; i++){
+            write(pipe_output_write, msg_to_send, MAX_INFO_TO_SEND_SIZE);
+            read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+            if (strcmp(msg_received, "ack\0") != 0){
+                fprintf(stdout, "manager didn't receive correctly: %s\n", msg_received);
+                exit(1);
+            }
+        }
+        // 2) Write in output the "finish_output" command and read ack.
+        write(pipe_output_write, "finish_input\0", MAX_INFO_TO_SEND_SIZE);
+        read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+        if (strcmp(msg_received, "ack\0") != 0){
+            fprintf(stdout, "manager didn't receive correctly: %s\n", msg_received);
+            exit(1);
+        }
+
+    }
+    else {
+        // Message received wasn't expected, kills itself.
+        fprintf(stdout, "Didnt' expect such a message: %s\n", msg_received);
+        exit(1);
+    }
+}
+
 
 void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int pipe_input_write, int pipe_output_read, int pipe_output_write) {
     /*
@@ -32,30 +89,36 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
      * 0) Wait one second.
      * 1) Trigger the input pipe.
      * 2) Fetch information by the manager_input process.
-     * 3) Trigger the output_manager process and send information.
-     * 4) Wait for the end of the output_process (and mainly for the robotic arm).
+     * 3) Create output information based on the input received messages.
+     * 4) Trigger the output_manager process and send information.
+     * 5) Wait for the end of the output_process (and mainly for the robotic arm).
      */
 
     while (1){
         // 0) Wait one second.
         sleep(1);
 
-        /*
-         * 1) Trigger the input pipe.
+        /* 1) Trigger the input pipe.
          *      Send "start" to fetch input information, other to kill the process.
          */
         trigger_input(pipe_input_write);
 
-        /*
-         * 2) Fetch information by the manager_input process.
+        /* 2) Fetch information by the manager_input process.
          *      Perform a series of read operation, acknowledged by "ack" messages.
          */
         read_input(pipe_input_read, pipe_input_write);
 
+        /* 3) Create output information based on the input received messages.
+         *      Still to decided how
+         *      TODO: create output information.
+         */
 
-        /* 3) Trigger the output_manager process and send information.
+        /* 4) Trigger the output_manager process and send information.
          *      Perform all the operations like before, but now the manager is writing.
          */
+
+        trigger_output(pipe_output_write);
+        write_output(pipe_output_read, pipe_output_write);
 
 
     }
@@ -108,8 +171,8 @@ void manager_io(void){
         if (pid_output == 0){
             // Child process
             // Closes the ends of the pipes it doesn't need.
-            close(fd_manager_output[READ_PIPE]);
-            close(fd_output_manager[WRITE_PIPE]);
+            close(fd_manager_output[WRITE_PIPE]);
+            close(fd_output_manager[READ_PIPE]);
 
             fprintf(stdout, "Initialize the output process\n");
             // Invokes the output process manager.
@@ -118,7 +181,8 @@ void manager_io(void){
         else {
             // Parent process again
             // Closes the ends of the pipes it doesn't need.
-
+            close(fd_manager_output[READ_PIPE]);
+            close(fd_output_manager[WRITE_PIPE]);
             // starts the communications among input and output.
             manage_input_output(pid_input, pid_output, fd_input_manager[READ_PIPE],
                                 fd_manager_input[WRITE_PIPE], fd_output_manager[READ_PIPE],
