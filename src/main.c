@@ -4,7 +4,7 @@
 #include "manager_io.h"
 
 int main() {
-    printf("ATOM is gay!\n");
+    fprintf(stdout, "Start the main process \n");
     int pid_manager = fork();
     if (pid_manager == -1) {
         printf("Error: Could not create manager\n" );
