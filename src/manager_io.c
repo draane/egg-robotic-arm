@@ -88,6 +88,20 @@ void write_output(int pipe_output_read, int pipe_output_write){
     }
 }
 
+void wait_for_output_to_finish(int pipe_output_read, int pipe_output_write){
+    char msg_received[MAX_INFO_TO_SEND_SIZE];
+    read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+    if (strcmp(msg_received, "finish_output\0")){
+        write(pipe_output_write, "ack\n", MAX_INFO_TO_SEND_SIZE);
+    }
+    else {
+        fprintf(stdout, "Output crashed\n");
+        close(pipe_output_read);
+        close(pipe_output_write);
+        exit(1);
+    }
+}
+
 
 void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int pipe_input_write, int pipe_output_read, int pipe_output_write) {
     /*
@@ -127,6 +141,10 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
 
         trigger_output(pipe_output_write);
         write_output(pipe_output_read, pipe_output_write);
+
+        /* 5) Wait for the end of the output_process (and mainly for the robotic arm).
+        */
+        wait_for_output_to_finish(pipe_output_read, pipe_output_write);
 
 
     }
