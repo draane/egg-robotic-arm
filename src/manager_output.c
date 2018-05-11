@@ -39,7 +39,7 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
     int parameters[NUM_PARAMETERS_RECEIVED];
 
     int i; // just a counter
-    
+
     for (i = 0; i< NUM_PARAMETERS_RECEIVED; i++) {
       read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
       parameters[i] = atoi(msg_received);
@@ -132,6 +132,7 @@ void start_output(int pipe_write, int pipe_read) {
       output_pin_controller(output_pin[i]);
     }
     else {
+      enable_pin(output_pin[i]);
       output_pin_pid[i] = pid;
     }
   }

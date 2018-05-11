@@ -12,7 +12,7 @@
 
 #define ever (;;)
 
-static int enable_pin(const int pin);
+int enable_pin(const int pin);
 static int set_pin(const int pin, const int value);
 
 void output_pin_controller(const int pin) {
@@ -21,10 +21,10 @@ void output_pin_controller(const int pin) {
   waits for signal and then call set_pin with the right value
 */
   #ifdef ON_THE_RASPBERRY
-  if (enable_pin(pin) != 0) {
+  /*if (enable_pin(pin) != 0) {
     PRINT("Error: enable_pin fail!");
     exit(1);
-  }
+  }*/
   #endif
 
   if (set_pin(pin, 0) != 0) {
@@ -62,7 +62,7 @@ void output_pin_controller(const int pin) {
   }
 }
 
-static int enable_pin(const int pin){
+int enable_pin(const int pin) {
   //Enable GPIO pins
   #define BUFFER_MAX 3
   char buffer[BUFFER_MAX];
