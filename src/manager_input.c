@@ -28,7 +28,8 @@ void communicate_with_manager(int pipe_write, int pipe_read) {
             char msg_to_send[MAX_INFO_TO_SEND_SIZE];
             strcpy(msg_to_send, "Hello, I'm the input process\0");
             int num_messages_to_send = (rand() % 4) + 1;
-            for (int i = 0; i<num_messages_to_send; i++){
+            int i;
+            for (i = 0; i<num_messages_to_send; i++){
                 write(pipe_write, msg_to_send, MAX_INFO_TO_SEND_SIZE);
                 read(pipe_read, msg_received, MAX_INFO_TO_SEND_SIZE);
                 if (strcmp(msg_received, "ack\0") != 0){
@@ -60,5 +61,3 @@ void start_input(int pipe_write, int pipe_read){
     communicate_with_manager(pipe_write, pipe_read);
 
 }
-
-
