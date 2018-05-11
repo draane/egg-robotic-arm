@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "utils.h"
+
 #define MAX_INFO_TO_SEND_SIZE 100
 #define num_parameters_received 3
 
@@ -18,6 +20,7 @@ void communicate_output_with_manager(int pipe_output_write, int pipe_output_read
     strcpy(msg_received, "\0");
     int egg_in_the_case, egg_to_move, egg_to_order;
     while (1){
+        PRINT("Output is reading... \n");
         strcpy(msg_received, "\0");
         read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
 
@@ -27,12 +30,15 @@ void communicate_output_with_manager(int pipe_output_write, int pipe_output_read
             close(pipe_output_write);
             exit(1);
         }
+        else {
+            PRINT("output starts to receive parameters\n");
+            write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+        }
         
-        write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
 
         int parameters[num_parameters_received];
 
-        for (int i = 0; i<= num_parameters_received; i++){
+        for (int i = 0; i< num_parameters_received; i++){
             read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
             parameters[i] = atoi(msg_received);
             fprintf(stdout, "received %s\n", msg_received);

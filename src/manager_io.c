@@ -6,6 +6,7 @@
 
 #include "manager_output.h"
 #include "manager_input.h"
+#include "utils.h"
 
 #define READ_PIPE 0
 #define WRITE_PIPE 1
@@ -35,6 +36,7 @@ void trigger_output(int pipe_output_write){
      */
     fprintf(stdout, "Message to send in output.\n");
     write(pipe_output_write, "start\0", MAX_INFO_TO_SEND_SIZE);
+    //PRINT("Message written \n");
 }
 
 void write_output(int pipe_output_read, int pipe_output_write){
@@ -46,19 +48,22 @@ void write_output(int pipe_output_read, int pipe_output_write){
      * 2) Write in output the "finish_output" command and read ack.
      */
     char msg_received[100];
-
-    // TODO: must be deleted!
-    srand(time(NULL));
+    //PRINT("start message sent\n");
 
     // 0) Wait for the output "akc".
     read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
     if (strcmp(msg_received, "ack\0") == 0){
-
+        PRINT("ACK received after sending start\n");
         // 1) Write in output the information.
         char msg_to_send[MAX_INFO_TO_SEND_SIZE];
         strcpy(msg_to_send, "Hello, I'm the manager_process\0");
-        int num_messages_to_send = (rand() % 4) + 1;
+        int num_messages_to_send = 3;
+        int messages_to_send[3];
+        messages_to_send[0] = rand() % 7;
+        messages_to_send[1] = rand() % 4;
+        messages_to_send[2] = rand() % 7;
         for (int i = 0; i<num_messages_to_send; i++){
+            sprintf(msg_to_send, "%d", messages_to_send[i]);
             write(pipe_output_write, msg_to_send, MAX_INFO_TO_SEND_SIZE);
             read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
             if (strcmp(msg_received, "ack\0") != 0){
@@ -72,6 +77,9 @@ void write_output(int pipe_output_read, int pipe_output_write){
         if (strcmp(msg_received, "ack\0") != 0){
             fprintf(stdout, "manager didn't receive correctly: %s\n", msg_received);
             exit(1);
+        }
+        else {
+            //PRINT("switch to input.\n");
         }
 
     }
@@ -94,6 +102,8 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
      * 5) Wait for the end of the output_process (and mainly for the robotic arm).
      */
 
+    //TODO: remove it!
+    srand(time(NULL));
     while (1){
         // 0) Wait one second.
         sleep(1);
