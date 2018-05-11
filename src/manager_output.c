@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <time.h>
 
 #define MAX_INFO_TO_SEND_SIZE 100
+#define num_parameters_received 3
 
 void communicate_output_with_manager(int pipe_output_write, int pipe_output_read){
     /*
@@ -16,6 +16,7 @@ void communicate_output_with_manager(int pipe_output_write, int pipe_output_read
 
     char msg_received[MAX_INFO_TO_SEND_SIZE];
     strcpy(msg_received, "\0");
+    int egg_in_the_case, egg_to_move, egg_to_order;
     while (1){
         strcpy(msg_received, "\0");
         read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
@@ -26,12 +27,34 @@ void communicate_output_with_manager(int pipe_output_write, int pipe_output_read
             close(pipe_output_write);
             exit(1);
         }
+        
         write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-        while(strcmp(msg_received, "finish_input\0") != 0){
+
+        int parameters[num_parameters_received];
+
+        for (int i = 0; i<= num_parameters_received; i++){
             read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+            parameters[i] = atoi(msg_received);
             fprintf(stdout, "received %s\n", msg_received);
             write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
         }
+
+        read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+        if (strcmp(msg_received, "finish_input\0") == 0){
+            // Everything is ok.
+            fprintf(stdout, "received %s\n", msg_received);
+            write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+
+            // DO COSTA'S STUFF
+        }
+
+        else {
+            close(pipe_output_write);
+            close(pipe_output_read);
+            exit(0);
+        }
+        
+        
     }
 
 }
