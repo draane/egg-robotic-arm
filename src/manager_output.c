@@ -20,7 +20,7 @@ void communicate_output_with_manager(int pipe_output_write, int pipe_output_read
     strcpy(msg_received, "\0");
     int egg_in_the_case, egg_to_move, egg_to_order;
     while (1){
-        PRINT("Output is reading... \n");
+        //PRINT("Output is reading... \n");
         strcpy(msg_received, "\0");
         read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
 
@@ -31,10 +31,9 @@ void communicate_output_with_manager(int pipe_output_write, int pipe_output_read
             exit(1);
         }
         else {
-            PRINT("output starts to receive parameters\n");
+            //PRINT("output starts to receive parameters\n");
             write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
         }
-        
 
         int parameters[num_parameters_received];
 
@@ -52,6 +51,7 @@ void communicate_output_with_manager(int pipe_output_write, int pipe_output_read
             write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
 
             // DO COSTA'S STUFF
+
         }
 
         else {
