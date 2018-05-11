@@ -138,6 +138,14 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
       else
         kill(childs_pid[i+5], SIGNAL1);
     }
+
+    write(pipe_output_read, "finish_output\0", MAX_INFO_TO_SEND_SIZE);
+    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+    if (strcmp(msg_received, "ack\0") != 0) {
+      close(pipe_output_write);
+      close(pipe_output_read);
+      exit(0);
+    }
   }
   //TODO: add for ever and remove the 2 lines below:
   sleep(8);
