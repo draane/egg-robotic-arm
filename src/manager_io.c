@@ -60,7 +60,8 @@ void write_output(int pipe_output_read, int pipe_output_write){
         messages_to_send[0] = rand() % 7;
         messages_to_send[1] = rand() % 4;
         messages_to_send[2] = rand() % 7;
-        for (int i = 0; i<num_messages_to_send; i++){
+        int i;
+        for (i = 0; i<num_messages_to_send; i++){
             sprintf(msg_to_send, "%d", messages_to_send[i]);
             write(pipe_output_write, msg_to_send, MAX_INFO_TO_SEND_SIZE);
             read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);

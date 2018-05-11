@@ -38,7 +38,9 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
 
     int parameters[NUM_PARAMETERS_RECEIVED];
 
-    for (int i = 0; i< NUM_PARAMETERS_RECEIVED; i++) {
+    int i; // just a counter
+    
+    for (i = 0; i< NUM_PARAMETERS_RECEIVED; i++) {
       read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
       parameters[i] = atoi(msg_received);
       fprintf(stdout, "received %s\n", msg_received);
@@ -61,7 +63,6 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
     eggs_to_move = parameters[1];
     eggs_to_order = parameters[2];
 
-    int i; // just a counter
 
     // calculating values for pins representing number of egg in the case, done
     // with bitwise and
