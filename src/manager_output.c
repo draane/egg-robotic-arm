@@ -61,7 +61,7 @@ void output_manager(int* childs_pid){
       kill(childs_pid[i+5], SIGNAL1);
   }
 
-  //TODO: add a for ever and remove the 2 lines below:
+  //TODO: add for ever and remove the 2 lines below:
   sleep(8);
   kill_all_sons(childs_pid, OUTPUT_PIN_NUMBER);
 
@@ -74,9 +74,9 @@ void start_output(void) {
 */
 
   PRINT("Starting output processes...\n");
-  int output_pin[] = { DEFAULT_OUTPUT_PIN1, DEFAULT_OUTPUT_PIN2, DEFAULT_OUTPUT_PIN3, DEFAULT_OUTPUT_PIN4, DEFAULT_OUTPUT_PIN5, DEFAULT_OUTPUT_PIN6, DEFAULT_OUTPUT_PIN7, DEFAULT_OUTPUT_PIN8 };
+  int output_pin[] = { DEFAULT_OUTPUT_PINS_ARRAY };
 
-  int* output_pin_pid = malloc(sizeof(pid_t)*OUTPUT_PIN_NUMBER);
+  pid_t* output_pin_pid = malloc(sizeof(pid_t)*OUTPUT_PIN_NUMBER);
 
   int i;
   for(i = 0; i<OUTPUT_PIN_NUMBER; i++) {
@@ -99,9 +99,10 @@ void start_output(void) {
 }
 
 
-void kill_all_sons(int* childs_pid, const int len) {
+void kill_all_sons(pid_t* childs_pid, const int len) {
 /*
   send SIGKILL segnal to all the child processes, which pids are in childs_pid
+  then delete the array of pids
 */
   PRINT("KILLING ALL OUTPUT_PIN PROCESSES...\n");
 
