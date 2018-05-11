@@ -13,7 +13,7 @@
 
 void kill_all_sons(int* childs_pid, const int len);
 
-void output_manager(int* childs_pid, int pipe_write, int pipe_read){
+void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read) {
 /*
   Wait for information from the pipe,, calculate the output
   and then send a signal to each output_pin process.
@@ -24,29 +24,42 @@ void output_manager(int* childs_pid, int pipe_write, int pipe_read){
   strcpy(msg_received, "\0");
   for ever {
     strcpy(msg_received, "\0");
-    read(pipe_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
 
-    if (strcmp(msg_received, "start\0") != 0){
-        fprintf(stdout, "Output process didn't receive the start command as expected.\n");
-        close(pipe_read);
-        close(pipe_write);
-        exit(1);
+    if (strcmp(msg_received, "start\0") != 0) {
+      fprintf(stdout, "Output process didn't receive the start command as expected.\n");
+      close(pipe_output_read);
+      close(pipe_output_write);
+      exit(1);
     }
-    write(pipe_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-    while(strcmp(msg_received, "finish_input\0") != 0){
-        read(pipe_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-        fprintf(stdout, "received %s\n", msg_received);
-        write(pipe_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+    else {
+      write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
     }
+
+    int parameters[NUM_PARAMETERS_RECEIVED];
+
+    for (int i = 0; i< NUM_PARAMETERS_RECEIVED; i++) {
+      read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+      parameters[i] = atoi(msg_received);
+      fprintf(stdout, "received %s\n", msg_received);
+      write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+    }
+
+    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+    if (strcmp(msg_received, "finish_input\0") != 0) {
+      close(pipe_output_write);
+      close(pipe_output_read);
+      exit(0);
+    }
+    // Everything is ok.
+    fprintf(stdout, "received %s\n", msg_received);
+    write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
 
     int eggs_in_the_case, eggs_to_move, eggs_to_order;
 
-    //TODO: assign values from the pipe to the previus variables ^^
-    //for now I'll assign it here:
-    eggs_in_the_case = 0;
-    eggs_to_move = 3;
-    eggs_to_order = 6;
-    //please remember to remove it
+    eggs_in_the_case = parameters[0];
+    eggs_to_move = parameters[1];
+    eggs_to_order = parameters[2];
 
     int i; // just a counter
 
