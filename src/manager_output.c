@@ -13,11 +13,10 @@ void kill_all_sons(int* childs_pid, const int len);
 
 void output_manager(int* childs_pid){
 /*
-  Wait for information from the pipe (TODO: add pipe!), calculate the output
+  Wait for information from the pipe,, calculate the output
   and then send a signal to each output_pin process.
 */
-  PRINT("Starting Output Manager process...\n");
-
+  PRINT("Output Manager process started...\n");
 
   //TODO: wait for pipe...
 
