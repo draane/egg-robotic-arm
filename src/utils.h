@@ -8,3 +8,7 @@
 #else
 #define PRINT(x) ;
 #endif
+
+#define READ_PIPE 0
+#define WRITE_PIPE 1
+#define MAX_INFO_TO_SEND_SIZE 100

@@ -24,19 +24,19 @@ void output_manager(int* childs_pid, int pipe_write, int pipe_read){
   strcpy(msg_received, "\0");
   for ever {
     strcpy(msg_received, "\0");
-    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+    read(pipe_read, msg_received, MAX_INFO_TO_SEND_SIZE);
 
     if (strcmp(msg_received, "start\0") != 0){
         fprintf(stdout, "Output process didn't receive the start command as expected.\n");
-        close(pipe_output_read);
-        close(pipe_output_write);
+        close(pipe_read);
+        close(pipe_write);
         exit(1);
     }
-    write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+    write(pipe_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
     while(strcmp(msg_received, "finish_input\0") != 0){
-        read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+        read(pipe_read, msg_received, MAX_INFO_TO_SEND_SIZE);
         fprintf(stdout, "received %s\n", msg_received);
-        write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+        write(pipe_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
     }
 
     int eggs_in_the_case, eggs_to_move, eggs_to_order;

@@ -4,12 +4,10 @@
 #include <string.h>
 #include <time.h>
 
+#include "utils.h"
 #include "manager_output.h"
 #include "manager_input.h"
 
-#define READ_PIPE 0
-#define WRITE_PIPE 1
-#define MAX_INFO_TO_SEND_SIZE 100
 
 void trigger_input(int pipe_input_write){
     /*
