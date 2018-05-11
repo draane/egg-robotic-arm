@@ -24,7 +24,6 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
   strcpy(msg_received, "\0");
   for ever {
     strcpy(msg_received, "\0");
-<<<<<<< HEAD
     read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
 
     if (strcmp(msg_received, "start\0") != 0) {
@@ -47,7 +46,7 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
     }
 
     read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    if (strcmp(msg_received, "finish_input\0") != 0) {
+    if (strcmp(msg_received, "finish_output\0") != 0) {
       close(pipe_output_write);
       close(pipe_output_read);
       exit(0);
@@ -72,51 +71,6 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
         kill(childs_pid[i], SIGNAL0);
       else
         kill(childs_pid[i], SIGNAL1);
-=======
-    int egg_in_the_case, egg_to_move, egg_to_order;
-    while (1){
-        //PRINT("Output is reading... \n");
-        strcpy(msg_received, "\0");
-        read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-
-        if (strcmp(msg_received, "start\0") != 0){
-            fprintf(stdout, "Output process didn't receive the start command as expected.\n");
-            close(pipe_output_read);
-            close(pipe_output_write);
-            exit(1);
-        }
-        else {
-            //PRINT("output starts to receive parameters\n");
-            write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-        }
-
-        int parameters[num_parameters_received];
-
-        for (int i = 0; i< num_parameters_received; i++){
-            read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-            parameters[i] = atoi(msg_received);
-            fprintf(stdout, "received %s\n", msg_received);
-            write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-        }
-
-        read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-        if (strcmp(msg_received, "finish_input\0") == 0){
-            // Everything is ok.
-            fprintf(stdout, "received %s\n", msg_received);
-            write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-
-            // DO COSTA'S STUFF
-
-        }
-
-        else {
-            close(pipe_output_write);
-            close(pipe_output_read);
-            exit(0);
-        }
-        
-        
->>>>>>> dev-manager
     }
 
     // calculating values for pins representing number of egg to move, done
@@ -139,7 +93,7 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
         kill(childs_pid[i+5], SIGNAL1);
     }
 
-    write(pipe_output_read, "finish_output\0", MAX_INFO_TO_SEND_SIZE);
+    write(pipe_output_write, "finish_output\0", MAX_INFO_TO_SEND_SIZE);
     read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
     if (strcmp(msg_received, "ack\0") != 0) {
       close(pipe_output_write);
@@ -147,6 +101,7 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
       exit(0);
     }
   }
+
   //TODO: add for ever and remove the 2 lines below:
   sleep(8);
   kill_all_sons(childs_pid, OUTPUT_PIN_NUMBER);

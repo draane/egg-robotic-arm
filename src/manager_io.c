@@ -70,7 +70,7 @@ void write_output(int pipe_output_read, int pipe_output_write){
             }
         }
         // 2) Write in output the "finish_output" command and read ack.
-        write(pipe_output_write, "finish_input\0", MAX_INFO_TO_SEND_SIZE);
+        write(pipe_output_write, "finish_output\0", MAX_INFO_TO_SEND_SIZE);
         read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
         if (strcmp(msg_received, "ack\0") != 0){
             fprintf(stdout, "manager didn't receive correctly: %s\n", msg_received);
@@ -91,8 +91,8 @@ void write_output(int pipe_output_read, int pipe_output_write){
 void wait_for_output_to_finish(int pipe_output_read, int pipe_output_write){
     char msg_received[MAX_INFO_TO_SEND_SIZE];
     read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    if (strcmp(msg_received, "finish_output\0")){
-        write(pipe_output_write, "ack\n", MAX_INFO_TO_SEND_SIZE);
+    if (strcmp(msg_received, "finish_output\0") == 0){
+        write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
     }
     else {
         fprintf(stdout, "Output crashed\n");
