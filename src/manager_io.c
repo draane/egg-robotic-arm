@@ -1,5 +1,6 @@
 #include"manager_input.h"
 
 void manager_io(void){
-  start_input();
+  int pipe[2];
+  start_input(pipe[0],pipe[1]);
 }
