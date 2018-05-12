@@ -3,6 +3,7 @@
 #include<unistd.h>
 #include<signal.h>
 #include<sys/types.h>
+#include<string.h>
 
 #include"manager_input.h"
 #include"utils.h"
@@ -29,6 +30,7 @@ typedef struct pidpipe{
 //this area of the code is used only by the child processes
 pin_status_t to_send = NO_STATUS;
 int *my_pipe;
+//this is used by just the father
 
 //Kills all sons, used when a fatal error occurres or just
 //when the process has to be terminated
@@ -50,19 +52,30 @@ void child_pin_reader(int n,int p[2]){
 }
 
 void input_manager(pidpipe PIN_PIPE_PID[MAX_PINS]){
-  for(int i = 0; i<MAX_PINS; i++){
-    int res = NO_STATUS;
-    while(res == NO_STATUS){
-      kill(PIN_PIPE_PID[i].pid, UPDATE_SIGNAL);
-      int bytes = read(PIN_PIPE_PID[i].pipe[READ_PIPE], &res, sizeof(int));
+  char msg[MAX_INFO_TO_SEND_SIZE];
+  for(;;){
+    read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);   
+    if(strcmp(msg, START_MSG) != 0){  //Unexpected jihad
+      PRINT("Manager is missbehaving, killing myself");
+      exit(1);
     }
-    PRINT("Readed from i > %i\n", res);
+    for(int i = 0; i<MAX_PINS; i++){
+      int res = NO_STATUS;
+      while(res == NO_STATUS){
+        kill(PIN_PIPE_PID[i].pid, UPDATE_SIGNAL);
+        int bytes = read(PIN_PIPE_PID[i].pipe[READ_PIPE], &res, sizeof(int));
+      }
+      PRINT("Readed from %i > %i\n",i, res);
+      msg[i] = (res + OFFSET_OUTPUT_MSG); //Even more easy to read
+    }
+    msg[MAX_PINS] = '\0'; //Make it easy to ready and parse
+    //TODO fix the 500% overhead
+    write(my_pipe[WRITE_PIPE], msg, MAX_INFO_TO_SEND_SIZE);  
   }
-  PRINT("Started all process, destruction of the earth now being done\n");
-  fflush(stdin);
 }
 
 void child_handler(int n){
+  //TODO read from GPIO PIN
   write(my_pipe[WRITE_PIPE], &to_send, sizeof(pin_status_t));
 }
 
@@ -95,9 +108,12 @@ void create_process(int i, pidpipe PIN_PIPE_PID[MAX_PINS]){
   }
 }
 
-void start_input(void){
+void start_input(int inpipe, int outpipe){
   pidpipe PIN_PIPE_PID[MAX_PINS];
   PRINT("Input reader started\n\n");
   create_process(0, PIN_PIPE_PID);
+  //If here, you are father
+  pipe_t p = {inpipe, outpipe};
+  my_pipe = p;
   input_manager(PIN_PIPE_PID); 
 }
