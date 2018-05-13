@@ -75,7 +75,7 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
         kill(pin_pid_status[i].pid, UPDATE_SIGNAL);
         int bytes = read(pin_pid_status[i].pipe[READ_PIPE], &res, sizeof(int));
       }
-      PRINT("Readed from %i > %i\n",i, res);
+      PRINT("Read from %i > %i\n",i, res);
       msg[i] = (res + OFFSET_OUTPUT_MSG); //Even more easy to read "bbbbbbbbb" -> all eggs are present 
     }
     msg[MAX_PINS] = '\0'; //Make it easy to ready and parse

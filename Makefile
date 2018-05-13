@@ -18,4 +18,5 @@ bin:
 
 clean:
 	rm -rfv bin/
+
 rb:clean build

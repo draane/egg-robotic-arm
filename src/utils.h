@@ -10,6 +10,6 @@
     #define PRINT(x) ;
   #endif
   #define MAX_INFO_TO_SEND_SIZE 100
-  #define START_MSG "start"
+  #define START_MSG "start\0"
   #define OFFSET_OUTPUT_MSG 'a'
 #endif
