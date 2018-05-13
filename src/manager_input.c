@@ -22,6 +22,7 @@ typedef int pinstatus;
 typedef sig_atomic_t pin_status_t;
 typedef int pipe_t[2];
 
+
 typedef struct pidpipe{
   pipe_t  pipe;
   pid_t pid;
@@ -34,9 +35,12 @@ enum okerr {
 
 //this area of the code is used only by the child processes
 pin_status_t to_send = NO_STATUS;
+
+// Actually variable my_pipe is not a pipe, it's two different pipes' ends, one to read and one to write.
 int *my_pipe;
 //this is used by just the father
 
+/*
 //Kills all sons, used when a fatal error occurres or just
 //when the process has to be terminated
 void kill_all_sons(int limit, pidpipe pin_pid_status[MAX_PINS]){
@@ -44,7 +48,7 @@ void kill_all_sons(int limit, pidpipe pin_pid_status[MAX_PINS]){
     kill(pin_pid_status[i].pid,SIGKILL);
   }
 }
-
+*/ 
 pin_status_t read_pin(int n){
   return n;
 }
@@ -65,8 +69,8 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
   char msg[MAX_INFO_TO_SEND_SIZE];
   for(;;){
     read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);   
-    if(strcmp(msg, START_MSG) != 0){  //Unexpected jihad
-      PRINT("Manager is missbehaving, killing myself");
+    if(strcmp(msg, START_MSG) != 0){  // Unexpected message.
+      PRINT("Manager is missbehaving, killing myself\n");
       exit(1);
     }
     for(int i = 0; i<MAX_PINS; i++){
@@ -85,6 +89,7 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
 
 void child_signal_handler(int n){
   //TODO read from GPIO PIN
+  PRINT("Reading pin.\n");
   write(my_pipe[WRITE_PIPE], &to_send, sizeof(pin_status_t));
 }
 
@@ -121,14 +126,21 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
 }
 
 void start_input(int inpipe, int outpipe){
+  // Parameters passed are the ends of the two pipes that the method will use to communicate with the manager.
+  // Other ends have already been close by the manager process.
+
+  // Create the 8 child processes.
   pidpipe pin_pid_status[MAX_PINS];
   PRINT("Input reader started\n\n");
   int result = create_process(0, pin_pid_status);
   if(result != ok){
+    // Some error has occurred.
     exit(1);
   }
+
   //If here, you are father
-  pipe_t p = { inpipe, outpipe };
+  pipe_t p = { outpipe, inpipe };
   my_pipe = p;
-  input_manager(pin_pid_status); 
+  input_manager(pin_pid_status);
+
 }
