@@ -19,7 +19,7 @@ typedef int pinstatus;
 #define ON 1
 #define OFF !ON
 #define NO_STATUS 100
-typedef int pin_status_t;
+typedef sig_atomic_t pin_status_t;
 typedef int pipe_t[2];
 
 typedef struct pidpipe{
@@ -49,6 +49,7 @@ pin_status_t read_pin(int n){
   return n;
 }
 
+//Just reads the pin and saves it into to_send
 void child_pin_reader(int who_am_i){
   for(;;){
     pin_status_t val = read_pin(who_am_i);
@@ -56,6 +57,10 @@ void child_pin_reader(int who_am_i){
   }
 }
 
+//1) Expects a message START_MSG from the pipe
+//2) Writes output as a string in the pipe
+//3) GOTO 1
+//TODO: Change MAX_INFO_TO_SEND_SIZE to an actual resonable value
 void input_manager(pidpipe pin_pid_status[MAX_PINS]){
   char msg[MAX_INFO_TO_SEND_SIZE];
   for(;;){
@@ -71,10 +76,9 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
         int bytes = read(pin_pid_status[i].pipe[READ_PIPE], &res, sizeof(int));
       }
       PRINT("Readed from %i > %i\n",i, res);
-      msg[i] = (res + OFFSET_OUTPUT_MSG); //Even more easy to read
+      msg[i] = (res + OFFSET_OUTPUT_MSG); //Even more easy to read "bbbbbbbbb" -> all eggs are present 
     }
     msg[MAX_PINS] = '\0'; //Make it easy to ready and parse
-    //TODO fix the 500% overhead
     write(my_pipe[WRITE_PIPE], msg, MAX_INFO_TO_SEND_SIZE);  
   }
 }
@@ -105,7 +109,9 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
       //run the main child_pin_reader that just reads a pin and sleeps
       child_pin_reader(i);
       //unused return, just here for absolute security of termination
-      return;
+      //if the code reaches this point is pretty much certian something
+      //went wrong
+      return err;
     }else{
       close(pin_pid_status[i].pipe[WRITE_PIPE]);
       pin_pid_status[i].pid = pid;
