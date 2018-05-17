@@ -5,7 +5,11 @@
 #include<sys/types.h>
 #include<string.h>
 
+// TODO: remove it from code when random is not needed anymore.
+#include <time.h>
+
 #include"manager_input.h"
+#include"manager_io.h"
 #include"utils.h"
 
 #define MAX_PINS 8
@@ -50,7 +54,8 @@ void kill_all_sons(int limit, pidpipe pin_pid_status[MAX_PINS]){
 }
 */ 
 pin_status_t read_pin(int n){
-  return n;
+  int res = rand() % 2;
+  return res;
 }
 
 //Just reads the pin and saves it into to_send
@@ -67,6 +72,7 @@ void child_pin_reader(int who_am_i){
 //TODO: Change MAX_INFO_TO_SEND_SIZE to an actual resonable value
 void input_manager(pidpipe pin_pid_status[MAX_PINS]){
   char msg[MAX_INFO_TO_SEND_SIZE];
+  srand(time(NULL));
   for(;;){
     read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);   
     if(strcmp(msg, START_MSG) != 0){  // Unexpected message.
@@ -83,7 +89,15 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
       msg[i] = (res + OFFSET_OUTPUT_MSG); //Even more easy to read "bbbbbbbbb" -> all eggs are present 
     }
     msg[MAX_PINS] = '\0'; //Make it easy to ready and parse
-    write(my_pipe[WRITE_PIPE], msg, MAX_INFO_TO_SEND_SIZE);  
+
+    // Generate 2 bytes out of the string.
+    unsigned char char_to_send = make_one_byte_from_string(msg);
+
+    unsigned char message_to_send[2];
+    message_to_send[0] = char_to_send;
+    message_to_send[1] = '\0';
+
+    write(my_pipe[WRITE_PIPE], message_to_send, MAX_INFO_TO_SEND_SIZE);  
   }
 }
 

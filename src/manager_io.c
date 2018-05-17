@@ -13,11 +13,89 @@
 #include "utils.h"
 
 
+void manage_input_output(int, int, int, int, int, int);
+void trigger_input(int);
+void read_input(int, int);
+void trigger_output(int);
+void write_output(int, int);
+void process_input(char *msg_received);
+int count_eggs_in_the_box(unsigned int);
+
+int count_eggs_in_the_box(unsigned int byte_received){
+    // mask with last three bits. 11100000 = 224;
+
+    unsigned int mask= 224;
+    unsigned int eggs = byte_received & mask;
+    eggs = eggs >> 5;
+    PRINT("Eggs in the box: %d\n", eggs);
+
+    return eggs;
+
+}
+
+
+unsigned char make_one_byte_from_string(char* str){
+    unsigned char res_char;
+    if (strlen(str) != 8){
+       PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", strlen(str));
+       exit(1);
+    }
+    else {
+        unsigned int res = 0; 
+        unsigned int one = 1;   
+        for (int i = 0; i < 8; i++){
+            res = res << 1;
+            if (str[i] == 'a'){
+                // leave 0
+            }
+            else if (str[i] == 'b'){
+                res = res | one;
+            }
+            else {
+                PRINT("Some error occurred: received %c\n", str[i]);
+                exit(1);
+            }
+            PRINT("Received string as unsigned integer %d\n", res);
+        }
+        PRINT("Received string as unsigned integer %d\n", res);
+        res_char = res;
+        PRINT("Received in char %u\n", res_char);
+        return res_char;
+    }
+}
+
+void process_input(char* msg_received){
+    /* This process needs to convert the data in input into output data.
+        The data received consists of: 
+        - bits 0-5: the values of the 6 sensors of the egg box (a = false | b = true)
+        - bits 6-7: the values of the 2 bits of the warehouse. Same syntax as before.
+
+        Data to send in output: 
+        - bits 0-2: eggs in the box (configuration 111 is not used.)
+        - bits 3-4: usually set to 0, when set they sign the number of eggs to move from the warehouse to the box.
+        - bits 5-7: eggs to order (To refill the warehouse or to fill the box?).
+    */
+
+    PRINT("Size of input string: %lu\n", strlen(msg_received));
+    if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE){
+        PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", strlen(msg_received));
+        exit(1);
+    }
+
+    unsigned char char_received = msg_received[0];
+    unsigned int byte_received = char_received;
+
+    PRINT("Manager received : %d\n", byte_received);
+    // Count eggs in the box (0-2 bits)
+    int eggs_in_the_box = count_eggs_in_the_box(byte_received);
+
+}
+
+
 void trigger_input(int pipe_input_write){
     /*
      * 0) send "start" command to input.
      */
-    fprintf(stdout, "Message to send in input.\n");
     write(pipe_input_write, "start\0", MAX_INFO_TO_SEND_SIZE);
 }
 
@@ -27,7 +105,9 @@ void read_input(int pipe_input_read, int pipe_input_write){
     char msg_received[MAX_INFO_TO_SEND_SIZE];
     strcpy(msg_received, "\0");
     read(pipe_input_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    fprintf(stdout, "received %s\n", msg_received);
+    PRINT("received %s\n", msg_received);
+
+    process_input(msg_received);
      
 }
 
@@ -35,7 +115,7 @@ void trigger_output(int pipe_output_write){
     /*
      * 0) send "start" command to output.
      */
-    fprintf(stdout, "Message to send in output.\n");
+    PRINT("Message to send in output.\n");
     write(pipe_output_write, "start\0", MAX_INFO_TO_SEND_SIZE);
     //PRINT("Message written \n");
 }
@@ -69,7 +149,7 @@ void write_output(int pipe_output_read, int pipe_output_write){
             write(pipe_output_write, msg_to_send, MAX_INFO_TO_SEND_SIZE);
             read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
             if (strcmp(msg_received, "ack\0") != 0){
-                fprintf(stdout, "manager didn't receive correctly: %s\n", msg_received);
+                PRINT("manager didn't receive correctly: %s\n", msg_received);
                 exit(1);
             }
         }
@@ -77,7 +157,7 @@ void write_output(int pipe_output_read, int pipe_output_write){
         write(pipe_output_write, "finish_output\0", MAX_INFO_TO_SEND_SIZE);
         read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
         if (strcmp(msg_received, "ack\0") != 0){
-            fprintf(stdout, "manager didn't receive correctly: %s\n", msg_received);
+            PRINT("manager didn't receive correctly: %s\n", msg_received);
             exit(1);
         }
         else {
@@ -87,7 +167,7 @@ void write_output(int pipe_output_read, int pipe_output_write){
     }
     else {
         // Message received wasn't expected, kills itself.
-        fprintf(stdout, "Didnt' expect such a message: %s\n", msg_received);
+        PRINT("Didnt' expect such a message: %s\n", msg_received);
         exit(1);
     }
 }
@@ -99,7 +179,7 @@ void wait_for_output_to_finish(int pipe_output_read, int pipe_output_write){
         write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
     }
     else {
-        fprintf(stdout, "Output crashed\n");
+        PRINT("Output crashed\n");
         close(pipe_output_read);
         close(pipe_output_write);
         exit(1);
@@ -173,7 +253,7 @@ void manager_io(void){
     int pid_input = fork();
 
     if (pid_input < 0){
-        fprintf(stdout, "Couldn't create the Input process. \n");
+        PRINT("Couldn't create the Input process. \n");
         exit(1);
     }
     else if (pid_input == 0){
@@ -181,7 +261,7 @@ void manager_io(void){
         // Closes the ends of the pipes it doesn't need.
         close(fd_input_manager[READ_PIPE]);
         close(fd_manager_input[WRITE_PIPE]);
-        fprintf(stdout, "Initialize the input process.\n");
+        PRINT("Initialize the input process.\n");
         // Starts the input process.
         start_input(fd_input_manager[WRITE_PIPE], fd_manager_input[READ_PIPE]);
     }
@@ -195,7 +275,7 @@ void manager_io(void){
         int pid_output = fork();
         if (pid_output < 0){
             // Error occurred.
-            fprintf(stdout, "Couldn't create the Output process.\n");
+            PRINT("Couldn't create the Output process.\n");
             exit(1);
         }
         if (pid_output == 0){
@@ -204,7 +284,7 @@ void manager_io(void){
             close(fd_manager_output[WRITE_PIPE]);
             close(fd_output_manager[READ_PIPE]);
 
-            fprintf(stdout, "Initialize the output process\n");
+            PRINT("Initialize the output process\n");
             // Invokes the output process manager.
             start_output(fd_output_manager[WRITE_PIPE], fd_manager_output[READ_PIPE]);
         }

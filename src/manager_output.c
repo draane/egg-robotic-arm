@@ -27,7 +27,7 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
     read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
 
     if (strcmp(msg_received, "start\0") != 0) {
-      fprintf(stdout, "Output process didn't receive the start command as expected.\n");
+      PRINT("Output process didn't receive the start command as expected.\n");
       close(pipe_output_read);
       close(pipe_output_write);
       exit(1);
@@ -43,7 +43,7 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
     for (i = 0; i< NUM_PARAMETERS_RECEIVED; i++) {
       read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
       parameters[i] = atoi(msg_received);
-      fprintf(stdout, "received %s\n", msg_received);
+      PRINT("received %s\n", msg_received);
       write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
     }
 
@@ -54,7 +54,7 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
       exit(0);
     }
     // Everything is ok.
-    fprintf(stdout, "received %s\n", msg_received);
+    PRINT("received %s\n", msg_received);
     write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
 
     int eggs_in_the_case, eggs_to_move, eggs_to_order;

@@ -19,4 +19,9 @@
   // Max's stuff here
   #define START_MSG "start\0"
   #define OFFSET_OUTPUT_MSG 'a'
+  
+
+  // Eggs and pins information
+  #define NUMBER_OF_OUTPUT_BYTE 1
+  #define NUMBER_OF_EGGS_IN_THE_BOX 6
 #endif
