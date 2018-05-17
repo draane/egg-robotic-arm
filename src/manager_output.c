@@ -9,61 +9,27 @@
 #include "utils.h"
 #define ever (;;)
 
-#define fuckoff_and_kill_yourself(c, n) kill_all_sons(c, n); exit(1);
+static void kill_all_sons(int* childs_pid, const int len);
+static int shutdown(const int pipe1, const int pipe2, pid_t* childs_pid, const int child_num, const pid_t father_pid);
 
-void kill_all_sons(int* childs_pid, const int len);
+static int get_data_from_manager (const int pipe, int* par1, int* par2, int* par3, int* par4);
+static int write_data_to_manager (const int pipe, const int par);
 
-void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read) {
+
+void output_manager(int* childs_pid, int child_num, int pipe_write, int pipe_read, pid_t father_pid) {
 /*
   Wait for information from the pipe,, calculate the output
   and then send a signal to each output_pin process.
 */
   PRINT("Output Manager process started...\n");
 
-  char msg_received[MAX_INFO_TO_SEND_SIZE];
-  strcpy(msg_received, "\0");
   for ever {
-    strcpy(msg_received, "\0");
-    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-
-    if (strcmp(msg_received, "start\0") != 0) {
-      fprintf(stdout, "Output process didn't receive the start command as expected.\n");
-      close(pipe_output_read);
-      close(pipe_output_write);
-      exit(1);
+    int eggs_in_the_case, eggs_to_move, eggs_to_order;
+    if (0 != get_data_from_manager(pipe_read, &eggs_in_the_case, &eggs_to_move, &eggs_to_order) ) {
+      shutdown(pipe_read, pipe_write, output_pin_pid, childs_pid, child_num, father_pid);
     }
-    else {
-      write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-    }
-
-    int parameters[NUM_PARAMETERS_RECEIVED];
 
     int i; // just a counter
-
-    for (i = 0; i< NUM_PARAMETERS_RECEIVED; i++) {
-      read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-      parameters[i] = atoi(msg_received);
-      fprintf(stdout, "received %s\n", msg_received);
-      write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-    }
-
-    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    if (strcmp(msg_received, "finish_output\0") != 0) {
-      close(pipe_output_write);
-      close(pipe_output_read);
-      exit(0);
-    }
-    // Everything is ok.
-    fprintf(stdout, "received %s\n", msg_received);
-    write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-
-    int eggs_in_the_case, eggs_to_move, eggs_to_order;
-
-    eggs_in_the_case = parameters[0];
-    eggs_to_move = parameters[1];
-    eggs_to_order = parameters[2];
-
-
     // calculating values for pins representing number of egg in the case, done
     // with bitwise and
     for (i = 0; i < 3; i++) {
@@ -94,22 +60,18 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
         kill(childs_pid[i+5], SIGNAL1);
     }
 
-    write(pipe_output_write, "finish_output\0", MAX_INFO_TO_SEND_SIZE);
-    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    if (strcmp(msg_received, "ack\0") != 0) {
-      close(pipe_output_write);
-      close(pipe_output_read);
-      exit(0);
+    if (0 != write_data_to_manager(pipe_write, 0) ) {
+      shutdown(pipe_read, pipe_write, output_pin_pid, childs_pid, child_num, father_pid);
     }
+
   }
 
-  //TODO: add for ever and remove the 2 lines below:
   sleep(8);
   kill_all_sons(childs_pid, OUTPUT_PIN_NUMBER);
 
 }
 
-void start_output(int pipe_write, int pipe_read) {
+void start_output(int pipe_write, int pipe_read, pid_t father_pid) {
 /*
   Create all the output_pin process, giving each process its pin number,
   and then execute the output_manager process.
@@ -125,8 +87,7 @@ void start_output(int pipe_write, int pipe_read) {
     pid_t pid = fork();
     if (pid == -1) {
       PRINT("Error at spawning child, closing\n");
-      kill_all_sons(output_pin_pid, i-1);
-      exit(1);
+      shutdown(pipe_read, pipe_write, output_pin_pid, i+1, father_pid);
     }
     else if(pid == 0) {
       output_pin_controller(output_pin[i]);
@@ -137,8 +98,14 @@ void start_output(int pipe_write, int pipe_read) {
     }
   }
 
+
+  //set handler for SIGTERM
+  signal (SIGTERM, sig_term_handler);
+
   sleep(1); // just to make sure every process spawned
-  output_manager(output_pin_pid, pipe_write, pipe_read);
+
+
+  output_manager(output_pin_pid, pipe_write, pipe_read, father_pid);
 }
 
 
@@ -156,4 +123,70 @@ void kill_all_sons(pid_t* childs_pid, const int len) {
 
   free(childs_pid);
   PRINT("\tDONE\n");
+}
+
+static int get_data_from_manager (const int pipe, int* par1, int* par2, int* par3, int* par4) {
+  char msg_received[MAX_INFO_TO_SEND_SIZE];
+  strcpy(msg_received, "\0");
+
+  read(pipe, msg_received, MAX_INFO_TO_SEND_SIZE);
+
+  if (strcmp(msg_received, "start\0") != 0) {
+    fprintf(stdout, "Output process didn't receive the start command as expected.\n");
+    return 1;
+  }
+  else {
+    write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+  }
+
+  int parameters[NUM_PARAMETERS_RECEIVED];
+
+  int i;
+  for (i = 0; i< NUM_PARAMETERS_RECEIVED; i++) {
+    read(pipe, msg_received, MAX_INFO_TO_SEND_SIZE);
+    parameters[i] = atoi(msg_received);
+    fprintf(stdout, "received %s\n", msg_received);
+    write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+  }
+
+  read(pipe, msg_received, MAX_INFO_TO_SEND_SIZE);
+  if (strcmp(msg_received, "finish_output\0") != 0) {
+    return 1;
+  }
+
+  fprintf(stdout, "received %s\n", msg_received);
+  write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+
+  *par1 = parameters[0];
+  *par2 = parameters[1];
+  *par3 = parameters[2];
+
+  return 0;
+}
+
+static int write_data_to_manager (const int pipe, const int par) {
+  write(pipe, "finish_output\0", MAX_INFO_TO_SEND_SIZE);
+  read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+  if (strcmp(msg_received, "ack\0") != 0) {
+    return 1;
+  }
+  return 0;
+}
+
+static int shutdown(const int pipe1, const int pipe2, pid_t* childs_pid, const int child_num, const pid_t father_pid) {
+  //kill all child
+  kill_all_sons(childs_pid, child_num);
+
+  //close pipes
+  close(pipe1);
+  close(pipe2);
+
+  //send END signal to father
+  kill(SIGTERM, father_pid);
+
+  exit 1;
+}
+
+void sig_term_handler(int par) {
+  shutdown
 }
