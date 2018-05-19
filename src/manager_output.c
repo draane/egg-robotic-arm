@@ -11,16 +11,22 @@
 
 #define ever (;;)
 
+//global variables used by shutdown. must be globak, cause shutdown is called also from SIGTERM handler;
 int output_pin[] = { DEFAULT_OUTPUT_PINS_ARRAY };
+pid_t* output_pin_pid;
+pid_t output_father_pid;
+int output_read_pipe, output_write_pipe;
 
-static void kill_all_sons(int* childs_pid, const int len);
-static int shutdown(const int pipe1, const int pipe2, pid_t* childs_pid, const int child_num, const pid_t father_pid);
+
+static void kill_all_sons(void);
+static int shutdown(void);
+static void output_manager_sigterm_handler (int signal);
 
 static int get_data_from_manager (const int pipe, int* par1, int* par2, int* par3, int* par4);
 static int write_data_to_manager (const int pipe, const int par);
 
 
-void output_manager(int* childs_pid, int child_num, int pipe_write, int pipe_read, pid_t father_pid) {
+void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
 /*
   Wait for information from the pipe,, calculate the output
   and then send a signal to each output_pin process.
@@ -32,7 +38,7 @@ void output_manager(int* childs_pid, int child_num, int pipe_write, int pipe_rea
 
   for ever {
     if (0 != get_data_from_manager(pipe_read, &eggs_in_the_case, &eggs_to_move, &eggs_to_order, &arduino_value) ) {
-      shutdown(pipe_read, pipe_write, childs_pid, child_num, father_pid);
+      shutdown();
     }
 
     int i; // just a counter
@@ -41,9 +47,9 @@ void output_manager(int* childs_pid, int child_num, int pipe_write, int pipe_rea
     for (i = 0; i < 3; i++) {
       int pin_value = (eggs_in_the_case >> i) & 1;
       if (pin_value == 0)
-        kill(childs_pid[i], SIGNAL0);
+        kill(output_pin_pid[i], SIGNAL0);
       else
-        kill(childs_pid[i], SIGNAL1);
+        kill(output_pin_pid[i], SIGNAL1);
     }
 
     // calculating values for pins representing number of egg to move, done
@@ -51,9 +57,9 @@ void output_manager(int* childs_pid, int child_num, int pipe_write, int pipe_rea
     for (i = 0; i < 2; i++) {
       int pin_value = (eggs_to_move >> i) & 1;
       if (pin_value == 0)
-        kill(childs_pid[i+3], SIGNAL0);
+        kill(output_pin_pid[i+3], SIGNAL0);
       else
-        kill(childs_pid[i+3], SIGNAL1);
+        kill(output_pin_pid[i+3], SIGNAL1);
     }
 
     // calculating values for pins representing number of egg to order, done
@@ -61,19 +67,19 @@ void output_manager(int* childs_pid, int child_num, int pipe_write, int pipe_rea
     for (i = 0; i < 3; i++) {
       int pin_value = (eggs_to_order >> i) & 1;
       if (pin_value == 0)
-        kill(childs_pid[i+5], SIGNAL0);
+        kill(output_pin_pid[i+5], SIGNAL0);
       else
-        kill(childs_pid[i+5], SIGNAL1);
+        kill(output_pin_pid[i+5], SIGNAL1);
     }
 
     if (0 != write_data_to_manager(pipe_write, 0) ) {
-      shutdown(pipe_read, pipe_write, childs_pid, child_num, father_pid);
+      shutdown();
     }
 
   }
 
   sleep(8);
-  kill_all_sons(childs_pid, OUTPUT_PIN_NUMBER);
+  kill_all_sons();
 
 }
 
@@ -85,14 +91,18 @@ void start_output(int pipe_write, int pipe_read, pid_t father_pid) {
 
   PRINT("Starting output processes...\n");
 
-  pid_t* output_pin_pid = malloc(sizeof(pid_t)*OUTPUT_PIN_NUMBER);
+  output_pin_pid = malloc(sizeof(pid_t)*OUTPUT_PIN_NUMBER);
+
+  output_read_pipe = pipe_read;
+  output_write_pipe = pipe_write;
+  output_father_pid = father_pid;
 
   int i;
   for(i = 0; i<OUTPUT_PIN_NUMBER; i++) {
     pid_t pid = fork();
     if (pid == -1) {
       PRINT("Error at spawning child, closing\n");
-      shutdown(pipe_read, pipe_write, output_pin_pid, i+1, father_pid);
+      shutdown();
     }
     else if(pid == 0) {
       output_pin_controller(output_pin[i]);
@@ -104,11 +114,12 @@ void start_output(int pipe_write, int pipe_read, pid_t father_pid) {
   }
 
 
-  //TODO: set handler for SIGTERM
+  //set handler for SIGTERM
+  signal(SIGTERM, output_manager_sigterm_handler);
 
   sleep(1); // just to make sure every process spawned
 
-  output_manager(output_pin_pid, OUTPUT_PIN_NUMBER, pipe_write, pipe_read, father_pid);
+  output_manager(pipe_write, pipe_read, father_pid);
 }
 
 static int get_data_from_manager (const int pipe, int* par1, int* par2, int* par3, int* par4) {
@@ -162,7 +173,7 @@ static int write_data_to_manager (const int pipe, const int par) {
   return 0;
 }
 
-void kill_all_sons(pid_t* childs_pid, const int len) {
+void kill_all_sons(void) {
 /*
   send SIGKILL segnal to all the child processes, which pids are in childs_pid
   then delete the array of pids
@@ -170,25 +181,29 @@ void kill_all_sons(pid_t* childs_pid, const int len) {
   PRINT("KILLING ALL OUTPUT_PIN PROCESSES...\n");
 
   int i;
-  for (i = 0; i < len; i++) {
+  for (i = 0; i < OUTPUT_PIN_NUMBER; i++) {
     disable_pin(output_pin[i]);
-    kill(childs_pid[i], SIGKILL);
+    kill(output_pin_pid[i], SIGKILL);
   }
 
-  free(childs_pid);
+  free(output_pin_pid);
   PRINT("\tDONE\n");
 }
 
-static int shutdown(const int pipe1, const int pipe2, pid_t* childs_pid, const int child_num, const pid_t father_pid) {
+static int shutdown() {
   //kill all child
-  kill_all_sons(childs_pid, child_num);
+  kill_all_sons();
 
   //close pipes
-  close(pipe1);
-  close(pipe2);
+  close(output_read_pipe);
+  close(output_write_pipe);
 
   //send END signal to father
-  kill(SIGTERM, father_pid);
+  kill(SIGTERM, output_father_pid);
 
   exit (1);
+}
+
+static void output_manager_sigterm_handler (int signal) {
+  shutdown();
 }
