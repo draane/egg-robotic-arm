@@ -7,22 +7,37 @@
 #include <string.h>
 #include <time.h>
 
+#include <signal.h>
+
 #include "utils.h"
 #include "manager_output.h"
 #include "manager_input.h"
 #include "utils.h"
 
+// Global variables for parent process;
+int child_input;
+int child_output;
 
 void manage_input_output(int, int, int, int, int, int);
 void trigger_input(int);
 char* read_input(int, int);
 void trigger_output(int);
-void write_output(int, int);
+void write_output(int, int, unsigned char);
 unsigned char process_input(char *msg_received);
 int count_eggs_in_the_box(unsigned int);
 unsigned int count_eggs_in_the_warehouse(unsigned int);
 unsigned char generate_output(unsigned int, unsigned int);
+void sigterm_handler(int);
 
+void sigterm_handler(int signal_rec){
+    // TODO: needs to verify SIGTERM or SIGINT!
+    if (signal_rec == SIGINT){
+        PRINT("Sigterm received by master, killing sons and himself!\n");
+        kill(child_input, SIGTERM);
+        kill(child_output, SIGTERM);
+        exit(0);
+    }
+}
 
 
 unsigned char generate_output(unsigned int eggs_in_the_box, unsigned int eggs_in_the_warehouse){
@@ -173,7 +188,7 @@ void trigger_output(int pipe_output_write){
     //PRINT("Message written \n");
 }
 
-void write_output(int pipe_output_read, int pipe_output_write){
+void write_output(int pipe_output_read, int pipe_output_write, unsigned char msg_output){
     // TODO: needs to take as parameter the information to pass to the output process.
     /*
      * Actions to perform:
@@ -189,26 +204,15 @@ void write_output(int pipe_output_read, int pipe_output_write){
     if (strcmp(msg_received, "ack\0") == 0){
         PRINT("ACK received after sending start\n");
         // 1) Write in output the information.
-        char msg_to_send[MAX_INFO_TO_SEND_SIZE];
-        strcpy(msg_to_send, "Hello, I'm the manager_process\0");
-        int num_messages_to_send = 3;
-        int messages_to_send[3];
-        messages_to_send[0] = rand() % 7;
-        messages_to_send[1] = rand() % 4;
-        messages_to_send[2] = rand() % 7;
-        int i;
-        for (i = 0; i<num_messages_to_send; i++){
-            sprintf(msg_to_send, "%d", messages_to_send[i]);
-            write(pipe_output_write, msg_to_send, MAX_INFO_TO_SEND_SIZE);
-            read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-            if (strcmp(msg_received, "ack\0") != 0){
-                PRINT("manager didn't receive correctly: %s\n", msg_received);
-                exit(1);
-            }
-        }
-        // 2) Write in output the "finish_output" command and read ack.
-        write(pipe_output_write, "finish_output\0", MAX_INFO_TO_SEND_SIZE);
-        read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+        unsigned char msg_to_send[2];
+        int num_messages_to_send = 1;
+        msg_to_send[0] = msg_output;
+        msg_to_send[1] = '\0';
+        
+        write(pipe_output_write, msg_to_send, MAX_INFO_TO_SEND_SIZE);
+        read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+        
+        // 2) Wait for ack.
         if (strcmp(msg_received, "ack\0") != 0){
             PRINT("manager didn't receive correctly: %s\n", msg_received);
             exit(1);
@@ -253,6 +257,7 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
 
     //TODO: remove it!
     srand(time(NULL));
+    signal(SIGINT, &sigterm_handler);
     while (1){
         // 0) Wait one second.
         sleep(1);
@@ -278,7 +283,7 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
          */
 
         trigger_output(pipe_output_write);
-        write_output(pipe_output_read, pipe_output_write);
+        write_output(pipe_output_read, pipe_output_write, output);
 
         /* 5) Wait for the end of the output_process (and mainly for the robotic arm).
         */
@@ -320,6 +325,7 @@ void manager_io(void){
         start_input(fd_input_manager[WRITE_PIPE], fd_manager_input[READ_PIPE]);
     }
     else {
+        child_input = pid_input;
         // Parent process:
         // Closes the ends of the pipes it doesn't need.
         close(fd_input_manager[WRITE_PIPE]);
@@ -343,6 +349,7 @@ void manager_io(void){
             start_output(fd_output_manager[WRITE_PIPE], fd_manager_output[READ_PIPE]);
         }
         else {
+            child_output = pid_output;
             // Parent process again
             // Closes the ends of the pipes it doesn't need.
             close(fd_manager_output[READ_PIPE]);

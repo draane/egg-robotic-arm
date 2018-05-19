@@ -13,6 +13,27 @@
 
 void kill_all_sons(int* childs_pid, const int len);
 
+void parse_manager_message(int*, int*, int*, unsigned char*);
+
+void parse_manager_message(int* eggs_in_the_box, int* eggs_to_move, int* eggs_to_order, unsigned char* msg_received_from_manager){
+  /*
+    - bits 0-2: eggs in the box (configuration 111 is not used.)
+    - bits 3-4: usually set to 0, when set they sign the number of eggs to move from the warehouse to the box.
+    - bits 5-7: eggs to order (To refill the warehouse or to fill the box?).
+  */
+  int i;
+  unsigned char msg = msg_received_from_manager[0];
+  unsigned char eggs_to_order_c = msg & ((unsigned char)7);
+  msg = msg >> 3;
+  unsigned char eggs_to_move_c = msg & ((unsigned char)3);
+  msg =  msg >> 2;
+  unsigned char eggs_in_the_box_c = msg & ((unsigned char)7);
+
+  *(eggs_to_order) = eggs_to_order_c;
+  *(eggs_in_the_box) = eggs_in_the_box_c;
+  *(eggs_to_move) = eggs_to_move_c;
+}
+
 void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read) {
 /*
   Wait for information from the pipe,, calculate the output
@@ -40,30 +61,16 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
 
     int i; // just a counter
 
-    for (i = 0; i< NUM_PARAMETERS_RECEIVED; i++) {
-      read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-      parameters[i] = atoi(msg_received);
-      PRINT("received %s\n", msg_received);
-      write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-    }
+    unsigned char msg_received_from_manager[2];
 
-    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    if (strcmp(msg_received, "finish_output\0") != 0) {
-      close(pipe_output_write);
-      close(pipe_output_read);
-      exit(0);
-    }
-    // Everything is ok.
-    PRINT("received %s\n", msg_received);
+    read (pipe_output_read, msg_received_from_manager, MAX_INFO_TO_SEND_SIZE);
+    PRINT("received %u\n", msg_received_from_manager[0]);
     write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
-
+   
     int eggs_in_the_case, eggs_to_move, eggs_to_order;
-
-    eggs_in_the_case = parameters[0];
-    eggs_to_move = parameters[1];
-    eggs_to_order = parameters[2];
-
-
+    parse_manager_message(&eggs_in_the_case, &eggs_to_move, &eggs_to_order, msg_received_from_manager);
+    
+    PRINT("Eggs in the case: %d\nEggs to move: %d\nEggs to order: %d\n", eggs_in_the_case, eggs_to_move, eggs_to_order);
     // calculating values for pins representing number of egg in the case, done
     // with bitwise and
     for (i = 0; i < 3; i++) {
