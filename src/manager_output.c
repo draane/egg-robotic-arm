@@ -45,9 +45,9 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
   strcpy(msg_received, "\0");
   for ever {
     strcpy(msg_received, "\0");
-    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+    read(pipe_output_read, msg_received, DIM_OF_MSG_PIPE);
 
-    if (strcmp(msg_received, "start\0") != 0) {
+    if (strcmp(msg_received, START_MSG) != 0) {
       PRINT("Output process didn't receive the start command as expected.\n");
       close(pipe_output_read);
       close(pipe_output_write);

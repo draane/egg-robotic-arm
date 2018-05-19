@@ -97,7 +97,7 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
     message_to_send[0] = char_to_send;
     message_to_send[1] = '\0';
 
-    write(my_pipe[WRITE_PIPE], message_to_send, MAX_INFO_TO_SEND_SIZE);  
+    write(my_pipe[WRITE_PIPE], message_to_send, DIM_OF_MSG_PIPE);  
   }
 }
 
