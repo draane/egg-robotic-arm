@@ -26,12 +26,13 @@ void output_pin_controller(const int pin) {
   //while the progam is executing this process
   signal(SIGINT, output_pin_end_signal_handler);
 
-
+  //set the pin to 0
   if (set_pin(pin, 0) != 0) {
     PRINT("Error: set_pin fail!\n");
     shutdown(1);
   }
 
+  //create signal set for sigwait
   sigset_t set;
   sigemptyset(&set);
   sigaddset(&set, SIGNAL0);
@@ -45,16 +46,18 @@ void output_pin_controller(const int pin) {
       shutdown(1);
     }
     if (sig == SIGNAL0) {
-      value = 0;
+      value = LOW;
     }
     else if (sig == SIGNAL1) {
-      value = 1;
+      value = HIGH;
     }
     else {
       // should never get here
       PRINT("Error: wrong signal!\n");
+      shutdown(3);
     }
 
+    //set the pin to the value recived via the signals
     if (set_pin(pin, value) != 0) {
       PRINT("Error: set_pin fail!\n");
       shutdown(2);
@@ -73,6 +76,9 @@ the signal to the father
 }
 
 static void output_pin_end_signal_handler(int signal) {
+/*
+just call shutdown with different param depending in the signal recived
+*/
   if (signal == SIGTERM)
     shutdown(-1);
   else

@@ -9,6 +9,9 @@
 #include "utils.h"
 #include "gpio.h"
 
+#define MAX_SEND_BUFFER_SIZE 2
+#define MAX_RECIVE_BUFFER_SIZE 3
+#define PARAMETERS_RECIVED_FROM_THE_PIPE 4
 #define ever (;;)
 
 //global variables used by shutdown. must be globak, cause shutdown is called also from SIGTERM handler;
@@ -42,6 +45,7 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
     }
 
     int i; // just a counter
+
     // calculating values for pins representing number of egg in the case, done
     // with bitwise and
     for (i = 0; i < 3; i++) {
@@ -80,12 +84,12 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
 
   //shutdown never get here
   shutdown(1);
-
 }
 
 void start_output(int pipe_write, int pipe_read, pid_t father_pid) {
 /*
   Create all the output_pin process, giving each process its pin number,
+  enable the pins,
   and then execute the output_manager process.
 */
 
@@ -95,6 +99,8 @@ void start_output(int pipe_write, int pipe_read, pid_t father_pid) {
 
   int i;
 
+  //sets all the pid to -1, so in kill_all_sons it doesnt send kill signal to
+  //non valid pids
   for (i = 0; i<OUTPUT_PIN_NUMBER; i++)
     output_pin_pid[i] = -1;
 
@@ -124,18 +130,23 @@ void start_output(int pipe_write, int pipe_read, pid_t father_pid) {
 
   sleep(1); // just to make sure every process spawned
 
+  //execute the main task
   output_manager(pipe_write, pipe_read, father_pid);
 }
 
 static int get_data_from_manager (const int pipe, int* par1, int* par2, int* par3, int* par4) {
-  unsigned char msg_received[MAX_INFO_TO_SEND_SIZE];
-  int parameters[NUM_PARAMETERS_RECEIVED];
+/*
+retrive data from the pipe and puts the data recived into the four integer (parx)
+returns 0 if everything went define, other values if errors appened
+*/
+  unsigned char buffer[MAX_RECIVE_BUFFER_SIZE];
+  int parameters[PARAMETERS_RECIVED_FROM_THE_PIPE];
   int i;
 
-  for (i = 0; i< NUM_PARAMETERS_RECEIVED; i++) {
-    read(pipe, msg_received, MAX_INFO_TO_SEND_SIZE);
-    parameters[i] = atoi(msg_received);
-    PRINT("received %s\n", msg_received);
+  for (i = 0; i < PARAMETERS_RECIVED_FROM_THE_PIPE; i++) {
+    read(pipe, buffer, MAX_RECIVE_BUFFER_SIZE);
+    parameters[i] = atoi(buffer);
+    PRINT("received %s\n", buffer);
   };
 
   *par1 = parameters[0];
@@ -147,16 +158,21 @@ static int get_data_from_manager (const int pipe, int* par1, int* par2, int* par
 }
 
 static int write_data_to_manager (const int pipe, const int par) {
-  char buffer[MAX_INFO_TO_SEND_SIZE];
+/*
+send data to manager, so it knows everything in the output went fine
+*/
+  char buffer[MAX_SEND_BUFFER_SIZE];
   sprintf(buffer, "%d", par);
-  write(pipe, buffer, MAX_INFO_TO_SEND_SIZE);
+  write(pipe, buffer, MAX_SEND_BUFFER_SIZE);
+//TODO: Check that write doesnt return errors
+
   return 0;
 }
 
 void kill_all_sons(void) {
 /*
-  send SIGKILL segnal to all the child processes, which pids are in childs_pid
-  then delete the array of pids
+  send SIGKILL segnal to all the child processes, which pids are in childs_pid,
+  disable the pins, then delete the array of pids
 */
   PRINT("KILLING ALL OUTPUT_PIN PROCESSES...\n");
 
@@ -171,6 +187,12 @@ void kill_all_sons(void) {
 }
 
 static int shutdown(const int exit_value) {
+/*
+call kill_all_sons to close output_pin processes,
+close the pipes,
+send SIGTERM to the father_pid process,
+and then close the process with the value of the param exit_value as return value
+*/
   //kill all child
   kill_all_sons();
 
@@ -185,6 +207,9 @@ static int shutdown(const int exit_value) {
 }
 
 static void output_manager_end_signal_handler (int signal) {
+/*
+just call shutdown with different param depending in the signal recived
+*/
   if (signal == SIGTERM)
     shutdown(-1);
   else
