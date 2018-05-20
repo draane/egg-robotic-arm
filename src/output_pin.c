@@ -11,24 +11,25 @@ pid_t output_pin_father_pid;
 
 #define ever (;;)
 
-static void shutdown(void);
-static void output_pin_sigterm_handler(int signal);
+static void shutdown(const int exit_value);
+static void output_pin_end_signal_handler(int signal);
 
 void output_pin_controller(const int pin) {
 /*
   at startup set the pin to 0;
   waits for signal and then call set_pin with the right value
 */
-  #ifdef ON_THE_RASPBERRY
-  /*if (enable_pin(pin) != 0) {
-    PRINT("Error: enable_pin fail!");
-    exit(1);
-  }*/
-  #endif
+
+  //set handler for SIGTERM
+  signal(SIGTERM, output_pin_end_signal_handler);
+  //set handler for SIGINT (needed for the /little/ chanche that ^C is send
+  //while the progam is executing this process
+  signal(SIGINT, output_pin_end_signal_handler);
+
 
   if (set_pin(pin, 0) != 0) {
     PRINT("Error: set_pin fail!\n");
-    exit(2);
+    shutdown(1);
   }
 
   sigset_t set;
@@ -41,7 +42,7 @@ void output_pin_controller(const int pin) {
     int value;
     if (sigwait(&set, &sig) != 0) {
       PRINT("Error: sigwait in output_pin: %i failed!\n", pin);
-      exit(1);
+      shutdown(1);
     }
     if (sig == SIGNAL0) {
       value = 0;
@@ -56,16 +57,24 @@ void output_pin_controller(const int pin) {
 
     if (set_pin(pin, value) != 0) {
       PRINT("Error: set_pin fail!\n");
-      exit(2);
+      shutdown(2);
     }
   }
 }
 
-static void shutdown(void) {
-  kill(output_pin_father_pid, SIGTERM);
-  exit (0);
+static void shutdown(const int exit_value) {
+/*
+if exit_value is -1 then a SIGTERM signal has been recived. so no need to send
+the signal to the father
+*/
+  if (exit_value != -1)
+    kill(output_pin_father_pid, SIGTERM);
+  exit (exit_value);
 }
 
-static void output_pin_sigterm_handler(int signal) {
-  shutdown();
+static void output_pin_end_signal_handler(int signal) {
+  if (signal == SIGTERM)
+    shutdown(-1);
+  else
+    shutdown(-2);
 }
