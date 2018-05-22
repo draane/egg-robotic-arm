@@ -54,7 +54,7 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
       exit(1);
     }
     else {
-      write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+      write(pipe_output_write, "ack", MAX_INFO_TO_SEND_SIZE);
     }
 
     int parameters[NUM_PARAMETERS_RECEIVED];
@@ -65,7 +65,7 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
 
     read (pipe_output_read, msg_received_from_manager, MAX_INFO_TO_SEND_SIZE);
     PRINT("received %u\n", msg_received_from_manager[0]);
-    write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+    write(pipe_output_write, "ack", MAX_INFO_TO_SEND_SIZE);
    
     int eggs_in_the_case, eggs_to_move, eggs_to_order;
     parse_manager_message(&eggs_in_the_case, &eggs_to_move, &eggs_to_order, msg_received_from_manager);
@@ -101,9 +101,9 @@ void output_manager(int* childs_pid, int pipe_output_write, int pipe_output_read
         kill(childs_pid[i+5], SIGNAL1);
     }
 
-    write(pipe_output_write, "finish_output\0", MAX_INFO_TO_SEND_SIZE);
+    write(pipe_output_write, "finish_output", MAX_INFO_TO_SEND_SIZE);
     read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    if (strcmp(msg_received, "ack\0") != 0) {
+    if (strcmp(msg_received, "ack") != 0) {
       close(pipe_output_write);
       close(pipe_output_read);
       exit(0);

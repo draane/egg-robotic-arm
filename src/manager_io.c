@@ -196,7 +196,7 @@ void write_output(int pipe_output_read, int pipe_output_write, unsigned char msg
 
     // 0) Wait for the output "akc".
     read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    if (strcmp(msg_received, "ack\0") == 0){
+    if (strcmp(msg_received, "ack") == 0){
         PRINT("ACK received after sending start\n");
         // 1) Write in output the information.
         unsigned char msg_to_send[2];
