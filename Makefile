@@ -1,7 +1,7 @@
 SHELL = /bin/sh
 
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -std=gnu90
 
 build: bin bin/main.o
 	$(CC) bin/*.o -o bin/main.out $(CFLAGS)
