@@ -58,7 +58,8 @@ pin_status_t to_send = NO_STATUS;
 
 // Actually variable my_pipe is not a pipe, it's two different pipes' ends, one to read and one to write.
 int *my_pipe;
-//this is used by just the father
+//this is used by just the father as a global list of children's pids.
+int children_pid[MAX_PINS];
 
 /*
 //Kills all sons, used when a fatal error occurres or just
@@ -68,7 +69,25 @@ void kill_all_sons(int limit, pidpipe pin_pid_status[MAX_PINS]){
     kill(pin_pid_status[i].pid,SIGKILL);
   }
 }
-*/ 
+*/
+
+void signal_term_handler_children(int sig_int){
+  if (sig_int == SIGTERM || sig_int == SIGINT){
+    kill(getppid(), SIGTERM);
+    exit(1);
+  }
+}
+
+void signal_term_handler_parent(int sigint){
+  if (sigint == SIGTERM || sigint == SIGINT){
+    PRINT("Input kills all children and itself.\n");
+    int i;
+    for ( i = 0; i<INPUT_PIN_NUMBER; i++){
+      kill(children_pid[i], SIGTERM);
+    }
+    exit(1);
+  }
+}
 
 //Just reads the pin and saves it into to_send
 void child_pin_reader(int who_am_i){
@@ -83,6 +102,11 @@ void child_pin_reader(int who_am_i){
 //TODO: Change MAX_INFO_TO_SEND_SIZE to an actual resonable value
 void input_manager(pidpipe pin_pid_status[MAX_PINS]){
   char msg[MAX_INFO_TO_SEND_SIZE];
+  PRINT("children_pids\n");
+  int i;
+  for (i = 0; i<8; i++){
+    PRINT("%d\n", children_pid[i]);
+  }
   srand(time(NULL));
   for(;;){
     read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);   
@@ -137,6 +161,8 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
       close(my_pipe[READ_PIPE]); 
       //initialize the signal handler used to know that an input has to be piped
       signal(UPDATE_SIGNAL, child_signal_handler); 
+      //signal(SIGTERM, signal_term_handler_children);
+      //signal(SIGINT, signal_term_handler_children);
       //run the main child_pin_reader that just reads a pin and sleeps
       child_pin_reader(i);
       //unused return, just here for absolute security of termination
@@ -146,6 +172,7 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
     }else{
       close(pin_pid_status[i].pipe[WRITE_PIPE]);
       pin_pid_status[i].pid = pid;
+      children_pid[i] = pid;
       create_process(i+1, pin_pid_status);
       enable_pin(input_pin[i], IN);
       return ok;
@@ -169,6 +196,10 @@ void start_input(int inpipe, int outpipe){
   //If here, you are father
   pipe_t p = { outpipe, inpipe };
   my_pipe = p;
+  
+  signal (SIGTERM, signal_term_handler_parent);
+  signal (SIGINT, signal_term_handler_parent);
+  
   input_manager(pin_pid_status);
 
 }

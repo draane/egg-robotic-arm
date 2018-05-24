@@ -7,12 +7,13 @@
 #include "gpio.h"
 #include "utils.h"
 
-
-static int GPIOExport(int pin);
-static int GPIOUnexport(int pin);
-static int GPIODirection(int pin, int dir);
-static int GPIORead(int pin);
-static int GPIOWrite(int pin, int value);
+#ifdef ON_THE_RASPBERRY
+	static int GPIOExport(int pin);
+	static int GPIOUnexport(int pin);
+	static int GPIODirection(int pin, int dir);
+	static int GPIORead(int pin);
+	static int GPIOWrite(int pin, int value);
+#endif
 
 int enable_pin(const int pin, const int type) {
   #ifdef ON_THE_RASPBERRY
@@ -43,8 +44,7 @@ int disable_pin(const int pin) {
 
 int set_pin(const int pin, const int value) {
   PRINT("Set pin %d at value: %d\n", pin, value);
-
-  #ifdef ON_THE_RASPBERRY
+	#ifdef ON_THE_RASPBERRY
     if (GPIOWrite(pin, value) != 0) {
       PRINT ("Error: GPIOWrite failed!\n");
       return -1;
@@ -55,9 +55,9 @@ int set_pin(const int pin, const int value) {
 }
 
 int read_pin(const int pin, int* res) {
-  PRINT("Read from pin: %d\n", pin);
-
+  //PRINT("Read from pin: %d\n", pin);
   int value = 0;
+	value = rand() % 2;
   #ifdef ON_THE_RASPBERRY
     value = GPIORead(pin);
     if (value == -1) {
@@ -70,94 +70,97 @@ int read_pin(const int pin, int* res) {
   return 0;
 }
 
-static int GPIOExport(int pin)
-{
-	char buffer[BUFFER_MAX];
-	ssize_t bytes_written;
-	int fd;
+#ifdef ON_THE_RASPBERRY
 
-	fd = open("/sys/class/gpio/export", O_WRONLY);
-	if (fd == -1)
-		return -1;
+	static int GPIOExport(int pin)
+	{
+		char buffer[BUFFER_MAX];
+		ssize_t bytes_written;
+		int fd;
 
-	bytes_written = snprintf(buffer, BUFFER_MAX, "%d", pin);
-	if (write(fd, buffer, bytes_written) == -1)
-    return -2;
+		fd = open("/sys/class/gpio/export", O_WRONLY);
+		if (fd == -1)
+			return -1;
 
-	close(fd);
-	return 0;
-}
+		bytes_written = snprintf(buffer, BUFFER_MAX, "%d", pin);
+		if (write(fd, buffer, bytes_written) == -1)
+			return -2;
 
-static int GPIOUnexport(int pin)
-{
-	char buffer[BUFFER_MAX];
-	ssize_t bytes_written;
-	int fd;
+		close(fd);
+		return 0;
+	}
 
-	fd = open("/sys/class/gpio/unexport", O_WRONLY);
-	if (fd == -1)
-		return -1;
+	static int GPIOUnexport(int pin)
+	{
+		char buffer[BUFFER_MAX];
+		ssize_t bytes_written;
+		int fd;
 
-	bytes_written = snprintf(buffer, BUFFER_MAX, "%d", pin);
-	if (write(fd, buffer, bytes_written) == -1)
-    return -2;
+		fd = open("/sys/class/gpio/unexport", O_WRONLY);
+		if (fd == -1)
+			return -1;
 
-	close(fd);
-	return 0;
-}
+		bytes_written = snprintf(buffer, BUFFER_MAX, "%d", pin);
+		if (write(fd, buffer, bytes_written) == -1)
+			return -2;
 
-static int GPIODirection(int pin, int dir)
-{
-	static const char s_directions_str[]  = "in\0out";
+		close(fd);
+		return 0;
+	}
 
-	char path[DIRECTION_MAX];
-	int fd;
+	static int GPIODirection(int pin, int dir)
+	{
+		static const char s_directions_str[]  = "in\0out";
 
-	snprintf(path, DIRECTION_MAX, "/sys/class/gpio/gpio%d/direction", pin);
-	fd = open(path, O_WRONLY);
-	if (fd == -1)
-		return -1;
+		char path[DIRECTION_MAX];
+		int fd;
 
-	if (write(fd, &s_directions_str[IN == dir ? 0 : 3], IN == dir ? 2 : 3) == -1)
-    return -2;
+		snprintf(path, DIRECTION_MAX, "/sys/class/gpio/gpio%d/direction", pin);
+		fd = open(path, O_WRONLY);
+		if (fd == -1)
+			return -1;
 
-	close(fd);
-	return(0);
-}
+		if (write(fd, &s_directions_str[IN == dir ? 0 : 3], IN == dir ? 2 : 3) == -1)
+			return -2;
 
-static int GPIORead(int pin)
-{
-	char path[VALUE_MAX];
-	char value_str[3];
-	int fd;
+		close(fd);
+		return(0);
+	}
 
-	snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
-	fd = open(path, O_RDONLY);
-	if (fd == -1)
-    return -1;
+	static int GPIORead(int pin)
+	{
+		char path[VALUE_MAX];
+		char value_str[3];
+		int fd;
 
-	if (read(fd, value_str, 3) == -1)
-    return -1;
+		snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
+		fd = open(path, O_RDONLY);
+		if (fd == -1)
+			return -1;
 
-	close(fd);
-	return(atoi(value_str));
-}
+		if (read(fd, value_str, 3) == -1)
+			return -1;
 
-static int GPIOWrite(int pin, int value)
-{
-	static const char s_values_str[] = "01";
+		close(fd);
+		return(atoi(value_str));
+	}
 
-	char path[VALUE_MAX];
-	int fd;
+	static int GPIOWrite(int pin, int value)
+	{
+		static const char s_values_str[] = "01";
 
-	snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
-	fd = open(path, O_WRONLY);
-	if (fd == -1)
-    return -1;
+		char path[VALUE_MAX];
+		int fd;
 
-	if (write(fd, &s_values_str[LOW == value ? 0 : 1], 1) != 1)
-    return -2;
+		snprintf(path, VALUE_MAX, "/sys/class/gpio/gpio%d/value", pin);
+		fd = open(path, O_WRONLY);
+		if (fd == -1)
+			return -1;
 
-	close(fd);
-	return(0);
-}
+		if (write(fd, &s_values_str[LOW == value ? 0 : 1], 1) != 1)
+			return -2;
+
+		close(fd);
+		return(0);
+	}
+#endif

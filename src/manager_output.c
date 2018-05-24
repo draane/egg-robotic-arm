@@ -146,9 +146,9 @@ returns 0 if everything went define, other values if errors appened
   int i;
 
   for (i = 0; i < PARAMETERS_RECIVED_FROM_THE_PIPE; i++) {
-    read(pipe, buffer, MAX_RECIVE_BUFFER_SIZE);
+    read(pipe, buffer, 2);
     parameters[i] = atoi(buffer);
-    PRINT("received %s\n", buffer);
+    PRINT("received from manager: %s\n", buffer);
   };
 
   *par1 = parameters[0];

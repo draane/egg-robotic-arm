@@ -62,7 +62,7 @@ static int count_eggs_in_the_box(unsigned int byte_received){
     unsigned int mask= 252;
     unsigned int eggs = byte_received & mask;
     eggs = eggs >> 2;
-    PRINT("Eggs in the box: %d\n", eggs);
+    //PRINT("Eggs in the box: %d\n", eggs);
     int counter = 0;
     int i;
     for (i = 0; i<NUMBER_OF_EGGS_IN_THE_BOX; i++){
@@ -73,7 +73,7 @@ static int count_eggs_in_the_box(unsigned int byte_received){
         }
         eggs = eggs >> 1;
     }
-    PRINT("counter of eggs in the box: %d\n", counter);
+    PRINT("Eggs in the box: %d\n", counter);
     return counter;
 }
 
@@ -124,9 +124,10 @@ static int* process_input(char* msg_received){
         - bits 6-7: the values of the 2 bits of the warehouse. Same syntax as before.
 
         Data to send in output: 
-        - bits 0-2: eggs in the box (configuration 111 is not used.)
-        - bits 3-4: usually set to 0, when set they sign the number of eggs to move from the warehouse to the box.
-        - bits 5-7: eggs to order (To refill the warehouse or to fill the box?).
+        - Eggs in the box;
+        - Eggs in the warehouse
+        - Eggs to order
+        - Eggs to move with the robotic arm?
     */
 
     PRINT("Size of input string: %lu\n", strlen(msg_received));
@@ -138,9 +139,7 @@ static int* process_input(char* msg_received){
     unsigned char byte_received = msg_received[0];
 
     PRINT("Manager received : %d\n", byte_received);
-    // Count eggs in the box (0-5 bits)
     int eggs_in_the_box = count_eggs_in_the_box(byte_received);
-    // Count eggs in the warehouse (6-7 bits)
     int eggs_int_the_warehouse = count_eggs_in_the_warehouse(byte_received);
 
     int eggs_to_move_to_box = 6 - eggs_in_the_box;
@@ -169,19 +168,16 @@ static int* process_input(char* msg_received){
 
 void trigger_input(int pipe_input_write){
     /*
-     * 0) send "start" command to input.
+     * 0) send START command to input.
      */
     write(pipe_input_write, START_MSG, MAX_INFO_TO_SEND_SIZE);
 }
 
 char* read_input(int pipe_input_read, int pipe_input_write){
     // input just sends one string. No acks made.
-
     char * msg_received = malloc(sizeof(char) * 2);
     strcpy(msg_received, "\0");
     read(pipe_input_read, msg_received, DIM_OF_MSG_PIPE);
-    PRINT("received %s\n", msg_received);
-
     return msg_received;
      
 }
@@ -206,41 +202,38 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
     char msg_received[100];
     //PRINT("start message sent\n");
 
-    // 0) Wait for the output "akc".
-    read(pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    if (strcmp(msg_received, "ack") == 0){
-        PRINT("ACK received after sending start\n");
-        // 1) Write in output the information.
-        char eggs_in_the_box[5];
-        sprintf(eggs_in_the_box, "%d", msg_output[0]);
-        char eggs_in_the_warehouse[5];
-        sprintf(eggs_in_the_warehouse, "%d", msg_output[1]);
-        char eggs_to_order[5];
-        sprintf(eggs_to_order, "%d", msg_output[2]);
+    PRINT("ACK received after sending start\n");
+    // 1) Write in output the information.
+    int len; // length of the integer converted to string.
+    char eggs_in_the_box[5];
+    len = sprintf(eggs_in_the_box, "%d", msg_output[0]);
+    eggs_in_the_box[len] = '\0';
+    char eggs_in_the_warehouse[5];
+    len = sprintf(eggs_in_the_warehouse, "%d", msg_output[1]);
+    eggs_in_the_warehouse[len] = '\0';
+    char eggs_to_order[5];
+    len = sprintf(eggs_to_order, "%d", msg_output[2]);
+    eggs_to_order[len] = '\0';
 
-        PRINT("Manager produced these strings: %s, %s, %s", eggs_in_the_box, eggs_in_the_warehouse, eggs_to_order);
-        
-        write(pipe_output_write, eggs_in_the_box, MAX_INFO_TO_SEND_SIZE);
-        write(pipe_output_write, eggs_in_the_warehouse, MAX_INFO_TO_SEND_SIZE);
-        write(pipe_output_write, eggs_to_order, MAX_INFO_TO_SEND_SIZE);
-        
-        read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-        
-        // 2) Wait for ack.
-        if (strcmp(msg_received, "ack\0") != 0){
-            PRINT("manager didn't receive correctly: %s\n", msg_received);
-            shutdown();
-        }
-        else {
-            //PRINT("switch to input.\n");
-        }
-        
-    }
-    else {
-        // Message received wasn't expected, kills itself.
-        PRINT("Didnt' expect such a message: %s\n", msg_received);
+    PRINT("Manager produced these strings: %s, %s, %s\n", eggs_in_the_box, eggs_in_the_warehouse, eggs_to_order);
+    
+    write(pipe_output_write, eggs_in_the_box, 2);
+    write(pipe_output_write, eggs_in_the_warehouse, 2);
+    write(pipe_output_write, eggs_to_order, 2);
+    // TODO: needs to be the value of the egg to move with the robotic arm.
+    write(pipe_output_write, eggs_to_order, 2);
+    
+    read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
+    
+    // 2) Wait for ack.
+    if (strcmp(msg_received, "0\0") != 0){
+        PRINT("manager didn't receive correctly: %s\n", msg_received);
         shutdown();
     }
+    else {
+        //PRINT("switch to input.\n");
+    }
+
     free (msg_output);
 }
 
@@ -260,16 +253,6 @@ void wait_for_output_to_finish(int pipe_output_read, int pipe_output_write){
 
 
 void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int pipe_input_write, int pipe_output_read, int pipe_output_write) {
-    /*
-     * Order of actions performed by manager_input_output:
-     * 0) Wait one second.
-     * 1) Trigger the input pipe.
-     * 2) Fetch information by the manager_input process.
-     * 3) Create output information based on the input received messages.
-     * 4) Trigger the output_manager process and send information.
-     * 5) Wait for the end of the output_process (and mainly for the robotic arm).
-     */
-
     //TODO: remove it!
     srand(time(NULL));
     signal(SIGINT, &sigterm_handler);
@@ -293,11 +276,8 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
          */
         int* output = process_input(msg_received);
         free(msg_received);
-        /* 4) Trigger the output_manager process and send information.
-         *      Perform all the operations like before, but now the manager is writing.
-         */
 
-        trigger_output(pipe_output_write);
+        //trigger_output(pipe_output_write);
         write_output(pipe_output_read, pipe_output_write, output);
 
         /* 5) Wait for the end of the output_process (and mainly for the robotic arm).
