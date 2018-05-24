@@ -28,8 +28,8 @@ static void output_manager_end_signal_handler (int signal);
 static int get_data_from_manager (const int pipe, int* par1, int* par2, int* par3, int* par4);
 static int write_data_to_manager (const int pipe, const int par);
 
-
 void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
+
 /*
   Wait for information from the pipe,, calculate the output
   and then send a signal to each output_pin process.
@@ -42,9 +42,11 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
   for ever {
     if (0 != get_data_from_manager(pipe_read, &eggs_in_the_case, &eggs_to_move, &eggs_to_order, &arduino_value) ) {
       shutdown(1);
+
     }
 
     int i; // just a counter
+
 
     // calculating values for pins representing number of egg in the case, done
     // with bitwise and
@@ -64,7 +66,7 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
         kill(output_pin_pid[i+3], SIGNAL0);
       else
         kill(output_pin_pid[i+3], SIGNAL1);
-    }
+    } 
 
     // calculating values for pins representing number of egg to order, done
     // with bitwise and
@@ -79,14 +81,12 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
     if (0 != write_data_to_manager(pipe_write, 0) ) {
       shutdown(1);
     }
-
+    //shutdown never get here
+    shutdown(1);
   }
-
-  //shutdown never get here
-  shutdown(1);
 }
 
-void start_output(int pipe_write, int pipe_read, pid_t father_pid) {
+void start_output(int pipe_write, int pipe_read) {
 /*
   Create all the output_pin process, giving each process its pin number,
   enable the pins,
@@ -94,6 +94,8 @@ void start_output(int pipe_write, int pipe_read, pid_t father_pid) {
 */
 
   PRINT("Starting output processes...\n");
+
+  pid_t father_pid = getppid();
 
   output_pin_pid = malloc(sizeof(pid_t)*OUTPUT_PIN_NUMBER);
 
@@ -139,7 +141,7 @@ static int get_data_from_manager (const int pipe, int* par1, int* par2, int* par
 retrive data from the pipe and puts the data recived into the four integer (parx)
 returns 0 if everything went define, other values if errors appened
 */
-  unsigned char buffer[MAX_RECIVE_BUFFER_SIZE];
+  char buffer[MAX_RECIVE_BUFFER_SIZE];
   int parameters[PARAMETERS_RECIVED_FROM_THE_PIPE];
   int i;
 

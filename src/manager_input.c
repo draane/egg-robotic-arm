@@ -5,8 +5,27 @@
 #include<sys/types.h>
 #include<string.h>
 
-#include"manager_input.h"
-#include"utils.h"
+// TODO: remove it from code when random is not needed anymore.
+#include <time.h>
+
+#include "manager_input.h"
+#include "manager_io.h"
+#include "utils.h"
+#include "gpio.h"
+
+#define INPUT_PIN_NUMBER 8
+
+#define DEFAULT_INPUT_PIN1 17
+#define DEFAULT_INPUT_PIN2 18
+#define DEFAULT_INPUT_PIN3 27
+#define DEFAULT_INPUT_PIN4 22
+#define DEFAULT_INPUT_PIN5 23
+#define DEFAULT_INPUT_PIN6 24
+#define DEFAULT_INPUT_PIN7 25
+#define DEFAULT_INPUT_PIN8 5
+
+#define DEFAULT_INPUT_PINS_ARRAY DEFAULT_INPUT_PIN1, DEFAULT_INPUT_PIN2, DEFAULT_INPUT_PIN3, DEFAULT_INPUT_PIN4, DEFAULT_INPUT_PIN5, DEFAULT_INPUT_PIN6, DEFAULT_INPUT_PIN7, DEFAULT_INPUT_PIN8
+
 
 #define MAX_PINS 8
 
@@ -22,6 +41,7 @@ typedef int pinstatus;
 typedef sig_atomic_t pin_status_t;
 typedef int pipe_t[2];
 
+int input_pin[] = { DEFAULT_INPUT_PINS_ARRAY };
 
 typedef struct pidpipe{
   pipe_t  pipe;
@@ -49,15 +69,11 @@ void kill_all_sons(int limit, pidpipe pin_pid_status[MAX_PINS]){
   }
 }
 */ 
-pin_status_t read_pin(int n){
-  return n;
-}
 
 //Just reads the pin and saves it into to_send
 void child_pin_reader(int who_am_i){
   for(;;){
-    pin_status_t val = read_pin(who_am_i);
-    to_send = val;
+    read_pin(who_am_i, &to_send);
   }
 }
 
@@ -67,23 +83,33 @@ void child_pin_reader(int who_am_i){
 //TODO: Change MAX_INFO_TO_SEND_SIZE to an actual resonable value
 void input_manager(pidpipe pin_pid_status[MAX_PINS]){
   char msg[MAX_INFO_TO_SEND_SIZE];
+  srand(time(NULL));
   for(;;){
     read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);   
     if(strcmp(msg, START_MSG) != 0){  // Unexpected message.
       PRINT("Manager is missbehaving, killing myself\n");
       exit(1);
     }
-    for(int i = 0; i<MAX_PINS; i++){
+    int i;
+    for(i = 0; i<MAX_PINS; i++){
       int res = NO_STATUS;
       while(res == NO_STATUS){
         kill(pin_pid_status[i].pid, UPDATE_SIGNAL);
-        int bytes = read(pin_pid_status[i].pipe[READ_PIPE], &res, sizeof(int));
+        read(pin_pid_status[i].pipe[READ_PIPE], &res, sizeof(int));
       }
       PRINT("Read from %i > %i\n",i, res);
       msg[i] = (res + OFFSET_OUTPUT_MSG); //Even more easy to read "bbbbbbbbb" -> all eggs are present 
     }
     msg[MAX_PINS] = '\0'; //Make it easy to ready and parse
-    write(my_pipe[WRITE_PIPE], msg, MAX_INFO_TO_SEND_SIZE);  
+
+    // Generate 2 bytes out of the string.
+    unsigned char char_to_send = make_one_byte_from_string(msg);
+
+    unsigned char message_to_send[2];
+    message_to_send[0] = char_to_send;
+    message_to_send[1] = '\0';
+
+    write(my_pipe[WRITE_PIPE], message_to_send, DIM_OF_MSG_PIPE);  
   }
 }
 
@@ -121,6 +147,8 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
       close(pin_pid_status[i].pipe[WRITE_PIPE]);
       pin_pid_status[i].pid = pid;
       create_process(i+1, pin_pid_status);
+      enable_pin(input_pin[i], IN);
+      return ok;
     }
   }
 }

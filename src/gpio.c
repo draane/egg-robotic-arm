@@ -7,6 +7,7 @@
 #include "gpio.h"
 #include "utils.h"
 
+
 static int GPIOExport(int pin);
 static int GPIOUnexport(int pin);
 static int GPIODirection(int pin, int dir);
@@ -16,7 +17,7 @@ static int GPIOWrite(int pin, int value);
 int enable_pin(const int pin, const int type) {
   #ifdef ON_THE_RASPBERRY
     if (GPIOExport(pin) != 0) {
-      PRINT("Error: GPIOExport failed!\n")
+      PRINT("Error: GPIOExport failed!\n");
       return -1;
     }
 
@@ -58,7 +59,7 @@ int read_pin(const int pin, int* res) {
 
   int value = 0;
   #ifdef ON_THE_RASPBERRY
-    value = GPIORead;
+    value = GPIORead(pin);
     if (value == -1) {
       PRINT("Error: GPIORead failed!\n");
       return -1;
