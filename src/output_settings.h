@@ -14,5 +14,3 @@
 
 #define SIGNAL0 22
 #define SIGNAL1 24
-
-
