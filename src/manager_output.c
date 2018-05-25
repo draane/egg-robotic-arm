@@ -10,7 +10,7 @@
 #include "gpio.h"
 
 #define MAX_SEND_BUFFER_SIZE 2
-#define MAX_RECIVE_BUFFER_SIZE 3
+#define MAX_RECIVE_BUFFER_SIZE 2
 #define PARAMETERS_RECIVED_FROM_THE_PIPE 4
 #define ever (;;)
 
