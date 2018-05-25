@@ -201,7 +201,7 @@ and then close the process with the value of the param exit_value as return valu
   close(output_write_pipe);
 
   //send END signal to father
-  kill(SIGTERM, output_father_pid);
+  kill(output_father_pid, SIGTERM);
 
   exit (exit_value);
 }
