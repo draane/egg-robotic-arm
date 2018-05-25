@@ -10,7 +10,7 @@
 #include "gpio.h"
 
 #define MAX_SEND_BUFFER_SIZE 2
-#define MAX_RECIVE_BUFFER_SIZE 3
+#define MAX_RECIVE_BUFFER_SIZE 2
 #define PARAMETERS_RECIVED_FROM_THE_PIPE 4
 #define ever (;;)
 
@@ -203,7 +203,7 @@ and then close the process with the value of the param exit_value as return valu
   close(output_write_pipe);
 
   //send END signal to father
-  kill(SIGTERM, output_father_pid);
+  kill(output_father_pid, SIGTERM);
 
   exit (exit_value);
 }
