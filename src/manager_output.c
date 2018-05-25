@@ -10,7 +10,7 @@
 #include "gpio.h"
 
 #define MAX_SEND_BUFFER_SIZE 2
-#define MAX_RECIVE_BUFFER_SIZE 3
+#define MAX_RECIVE_BUFFER_SIZE 2
 #define PARAMETERS_RECIVED_FROM_THE_PIPE 4
 #define ever (;;)
 
@@ -79,11 +79,11 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
     }
 
     if (0 != write_data_to_manager(pipe_write, 0) ) {
-      shutdown(1);
+      shutdown(42);
     }
-    //shutdown never get here
-    shutdown(1);
   }
+  //shutdown never get here
+  shutdown(25);
 }
 
 void start_output(int pipe_write, int pipe_read) {
@@ -146,7 +146,7 @@ returns 0 if everything went define, other values if errors appened
   int i;
 
   for (i = 0; i < PARAMETERS_RECIVED_FROM_THE_PIPE; i++) {
-    read(pipe, buffer, 2);
+    read(pipe, buffer, MAX_RECIVE_BUFFER_SIZE);
     parameters[i] = atoi(buffer);
     PRINT("received from manager: %s\n", buffer);
   };
@@ -195,6 +195,7 @@ close the pipes,
 send SIGTERM to the father_pid process,
 and then close the process with the value of the param exit_value as return value
 */
+  PRINT("Exit value of shutdown: %d\n", exit_value);
   //kill all child
   kill_all_sons();
 
@@ -203,7 +204,7 @@ and then close the process with the value of the param exit_value as return valu
   close(output_write_pipe);
 
   //send END signal to father
-  kill(SIGTERM, output_father_pid);
+  kill(output_father_pid, SIGTERM);
 
   exit (exit_value);
 }
@@ -212,8 +213,14 @@ static void output_manager_end_signal_handler (int signal) {
 /*
 just call shutdown with different param depending in the signal recived
 */
-  if (signal == SIGTERM)
+  if (signal == SIGTERM){
+    PRINT("SIGTERM received by output.\n");
     shutdown(-1);
-  else
+  }
+    
+  else{
+    PRINT("Received %d as signal of termination.\n", signal);
     shutdown(-2);
+  }
+    
 }

@@ -14,6 +14,8 @@
 #include "manager_input.h"
 #include "utils.h"
 
+#define OUTPUT_FINISHES_MESSAGE "0\0"
+
 // Global variables for parent process;
 int child_input;
 int child_output;
@@ -48,7 +50,7 @@ void shutdown(){
 
 void sigterm_handler(int signal_rec){
     if (signal_rec == SIGINT){
-        PRINT("Sigterm received by master, killing sons and himself!\n");
+        PRINT("Sigint received by master, killing sons and himself!\n");
         shutdown();
     }
     if (signal_rec == SIGTERM){
@@ -199,7 +201,6 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
      * 1) Write in output the information.
      * 2) Write in output the "finish_output" command and read ack.
      */
-    char msg_received[100];
     //PRINT("start message sent\n");
 
     PRINT("ACK received after sending start\n");
@@ -222,17 +223,6 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
     write(pipe_output_write, eggs_to_order, 2);
     // TODO: needs to be the value of the egg to move with the robotic arm.
     write(pipe_output_write, eggs_to_order, 2);
-    
-    read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    
-    // 2) Wait for ack.
-    if (strcmp(msg_received, "0\0") != 0){
-        PRINT("manager didn't receive correctly: %s\n", msg_received);
-        shutdown();
-    }
-    else {
-        //PRINT("switch to input.\n");
-    }
 
     free (msg_output);
 }
@@ -240,14 +230,14 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
 void wait_for_output_to_finish(int pipe_output_read, int pipe_output_write){
     char msg_received[MAX_INFO_TO_SEND_SIZE];
     read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    if (strcmp(msg_received, "finish_output\0") == 0){
-        write(pipe_output_write, "ack\0", MAX_INFO_TO_SEND_SIZE);
+    
+    // 2) Wait for ack.
+    if (strcmp(msg_received, OUTPUT_FINISHES_MESSAGE) != 0){
+        PRINT("manager didn't receive correctly: %s\n", msg_received);
+        shutdown();
     }
     else {
-        PRINT("Output crashed\n");
-        close(pipe_output_read);
-        close(pipe_output_write);
-        exit(1);
+        //PRINT("switch to input.\n");
     }
 }
 
@@ -256,6 +246,7 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
     //TODO: remove it!
     srand(time(NULL));
     signal(SIGINT, &sigterm_handler);
+    signal(SIGTERM, &sigterm_handler);
     while (1){
         // 0) Wait one second.
         sleep(1);
@@ -283,8 +274,6 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
         /* 5) Wait for the end of the output_process (and mainly for the robotic arm).
         */
         wait_for_output_to_finish(pipe_output_read, pipe_output_write);
-
-
     }
 }
 
