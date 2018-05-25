@@ -36,3 +36,14 @@ D(read input response) --> F(trigger output)
 F(trigger output) --START_MSG--> G(read output response)
 G(read output response) --> C(trigger input)
 ```
+**manager_input**
+```mermaid
+graph TD
+A((manager_input)) --> B(spawn childs)
+B(spawn childs) --> E(waits for manager_io)
+F((child)) --> G(read GPIO)
+F((child)) --> I(signal reciver)
+G(read GPIO) --> H(ellab and save)
+H(ellab and save) --> G(read GPIO)
+E(waits for manager_io)--signal-->I(signal reciver)
+```
