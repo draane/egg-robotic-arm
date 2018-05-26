@@ -110,11 +110,11 @@ unsigned char make_one_byte_from_string(char* str){
                 PRINT("Some error occurred: received %c\n", str[i]);
                 shutdown();
             }
-            PRINT("Received string as unsigned integer %d\n", res);
+            //PRINT("Received string as unsigned integer %d\n", res);
         }
-        PRINT("Received string as unsigned integer %d\n", res);
+        //PRINT("Received string as unsigned integer %d\n", res);
         res_char = res;
-        PRINT("Received in char %u\n", res_char);
+        //PRINT("Received in char %u\n", res_char);
         return res_char;
     }
 }
@@ -132,7 +132,7 @@ static int* process_input(char* msg_received){
         - Eggs to move with the robotic arm?
     */
 
-    PRINT("Size of input string: %lu\n", strlen(msg_received));
+    //PRINT("Size of input string: %lu\n", strlen(msg_received));
     if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE){
         PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", strlen(msg_received));
         shutdown();
