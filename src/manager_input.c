@@ -87,6 +87,7 @@ void signal_term_handler_parent(int sigint){
     for ( i = 0; i<INPUT_PIN_NUMBER; i++){
       kill(children_pid[i], SIGTERM);
     }
+    kill(getppid(), SIGTERM);
     exit(1);
   }
 }

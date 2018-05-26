@@ -30,6 +30,7 @@ static int write_data_to_manager (const int pipe, const int par);
 
 void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
 
+
 /*
   Wait for information from the pipe,, calculate the output
   and then send a signal to each output_pin process.
@@ -46,7 +47,6 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
     }
 
     int i; // just a counter
-
 
     // calculating values for pins representing number of egg in the case, done
     // with bitwise and
