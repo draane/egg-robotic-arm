@@ -37,7 +37,7 @@ void sigterm_handler(int);
 static void shutdown();
 
 void shutdown(){
-    
+
     close(fd_input_manager[READ_PIPE]);
     close(fd_manager_input[WRITE_PIPE]);
     close(fd_manager_output[WRITE_PIPE]);
@@ -95,9 +95,9 @@ unsigned char make_one_byte_from_string(char* str){
        exit(1);
     }
     else {
-        unsigned int res = 0; 
-        unsigned int one = 1; 
-        int i;  
+        unsigned int res = 0;
+        unsigned int one = 1;
+        int i;
         for (i = 0; i < 8; i++){
             res = res << 1;
             if (str[i] == 'a'){
@@ -121,11 +121,11 @@ unsigned char make_one_byte_from_string(char* str){
 
 static int* process_input(char* msg_received){
     /* This process needs to convert the data in input into output data.
-        The data received consists of: 
+        The data received consists of:
         - bits 0-5: the values of the 6 sensors of the egg box (a = false | b = true)
         - bits 6-7: the values of the 2 bits of the warehouse. Same syntax as before.
 
-        Data to send in output: 
+        Data to send in output:
         - Eggs in the box;
         - Eggs in the warehouse
         - Eggs to order
@@ -160,7 +160,7 @@ static int* process_input(char* msg_received){
     output_msg[0] = eggs_in_the_box;
     output_msg[1] = eggs_int_the_warehouse;
     output_msg[2] = eggs_to_order;
-    
+
     //unsigned char output = generate_output(eggs_in_the_box, eggs_int_the_warehouse);
 
     PRINT("Generated output = %d, %d, %d\n", output_msg[0], output_msg[1], output_msg[2]);
@@ -181,7 +181,7 @@ char* read_input(int pipe_input_read, int pipe_input_write){
     strcpy(msg_received, "\0");
     read(pipe_input_read, msg_received, DIM_OF_MSG_PIPE);
     return msg_received;
-     
+
 }
 
 void trigger_output(int pipe_output_write){
@@ -217,7 +217,7 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
     eggs_to_order[len] = '\0';
 
     PRINT("Manager produced these strings: %s, %s, %s\n", eggs_in_the_box, eggs_in_the_warehouse, eggs_to_order);
-    
+
     write(pipe_output_write, eggs_in_the_box, 2);
     write(pipe_output_write, eggs_in_the_warehouse, 2);
     write(pipe_output_write, eggs_to_order, 2);
@@ -230,7 +230,7 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
 void wait_for_output_to_finish(int pipe_output_read, int pipe_output_write){
     char msg_received[MAX_INFO_TO_SEND_SIZE];
     read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
-    
+
     // 2) Wait for ack.
     if (strcmp(msg_received, OUTPUT_FINISHES_MESSAGE) != 0){
         PRINT("manager didn't receive correctly: %s\n", msg_received);
@@ -304,6 +304,7 @@ void manager_io(void){
         start_input(fd_input_manager[WRITE_PIPE], fd_manager_input[READ_PIPE]);
     }
     else {
+        sleep(2);
         child_input = pid_input;
         // Parent process:
         // Closes the ends of the pipes it doesn't need.
