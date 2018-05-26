@@ -118,8 +118,7 @@ int read_pin(const int pin, int* res) {
 		if (fd == -1)
 			return -1;
 
-		if (write(fd, &s_directions_str[IN == dir ? 0 : 3], IN == dir ? 2 : 3) == -1)
-			return -2;
+		write(fd, &s_directions_str[IN == dir ? 0 : 3], IN == dir ? 2 : 3);
 
 		close(fd);
 		return(0);
