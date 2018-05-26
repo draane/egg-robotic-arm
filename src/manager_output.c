@@ -89,7 +89,7 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
 void update_pins_from_file(int* pins_from_file){
 
   if (pins_from_file[0] != -1){
-    // If first element is -1, then option -of was not specified. 
+    // If first element is -1, then option -of was not specified.
     //Otherwise update pins with the ones specified in the file.
     int i;
     PRINT("Output process received pins from file.\n");
@@ -108,21 +108,21 @@ void start_output(int pipe_write, int pipe_read, int* pins_from_file) {
   enable the pins,
   and then execute the output_manager process.
 */
-sleep(10);
+  sleep(3);
   PRINT("Starting output processes...\n");
 
   pid_t father_pid = getppid();
 
   output_pin_pid = malloc(sizeof(pid_t)*OUTPUT_PIN_NUMBER);
   int i;
-  
+
   // Update pins from default if -of is specified from command line.
   update_pins_from_file(pins_from_file);
-  
+
   for (i = 0; i<NUM_PINS; i++){
     PRINT("output pin[%d]: %d\n", i, output_pin[i]);
   }
-  
+
   //sets all the pid to -1, so in kill_all_sons it doesnt send kill signal to
   //non valid pids
   for (i = 0; i<OUTPUT_PIN_NUMBER; i++) {
