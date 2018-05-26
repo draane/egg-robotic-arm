@@ -23,7 +23,7 @@ int enable_pin(const int pin, const int type) {
     }
 
     if (GPIODirection(pin, type) != 0) {
-      PRINT("Error: GPIODirection failed!\n");
+      PRINT("Error: GPIODirection failed! (pin: %d)\n", pin);
       return -1;
     }
   #endif
@@ -45,8 +45,9 @@ int disable_pin(const int pin) {
 int set_pin(const int pin, const int value) {
   PRINT("Set pin %d at value: %d\n", pin, value);
 	#ifdef ON_THE_RASPBERRY
-    if (GPIOWrite(pin, value) != 0) {
-      PRINT ("Error: GPIOWrite failed!\n");
+		int r = GPIOWrite(pin, value);
+    if (r != 0) {
+      PRINT ("Error: GPIOWrite failed! (%d)\n", r);
       return -1;
     }
   #endif
