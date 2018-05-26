@@ -6,7 +6,9 @@
 #include "manager_io.h"
 #include "utils.h"
 
-static int get_command_line_arguments(int argv, char** argc, FILE*, FILE*);
+static int get_command_line_arguments(int argv, char** argc, FILE**, FILE**);
+
+void list_of_pins_from_file(FILE*, int*);
 
 
 int main(int argv, char** argc) {
@@ -14,38 +16,32 @@ int main(int argv, char** argc) {
     
     FILE* input_file = NULL, *output_file=NULL;
     if (argv > 1){
-        int return_message = get_command_line_arguments(argv, argc, input_file, output_file);
+        int return_message = get_command_line_arguments(argv, argc, &input_file, &output_file);
         if (return_message != 0){
             // Some error occurred;
             exit(return_message);
         }
 
     }
-
+    // If options -if, -of are specified, then update the list of pins with the new values.
     printf("file descriptors for input and output: \"%p\"\t\"%p\"\n", input_file, output_file);
     int input_pins_from_file[NUM_PINS];
+    int output_pins_from_file[NUM_PINS];
 
-    if (input_file != NULL){
-        int i;
-        for (i = 0; i<NUM_PINS; i++){
-            scanf("%d", &input_pins_from_file[i]);
-            printf("%d\n", input_pins_from_file[i]);
-        }
-    }
-    else {
-        int i;
-        for (i = 0; i<NUM_PINS; i++){
-            input_pins_from_file[i] = -1;
-        }
-    }
-    if (output_file != NULL){}
+    // Pins from file are -1 if not defined option -if, -of, or the integers in the file otherwise.
 
+    // Update input list 
+    list_of_pins_from_file(input_file, input_pins_from_file);
+    // Update output list.
+    list_of_pins_from_file(output_file, output_pins_from_file);
+    
     int pid_manager = fork();
     if (pid_manager == -1) {
         printf("Error: Could not create manager\n" );
         exit (1);
     } else if(pid_manager > 0) {
-        manager_io();
+        // to manager io the two lists of pins are passed.
+        manager_io(input_pins_from_file, output_pins_from_file);
     }else{
         exit(0); //fare nulla
     }
@@ -53,8 +49,22 @@ int main(int argv, char** argc) {
 }
 
 
+void list_of_pins_from_file(FILE* fd, int* list_pin){
+    if (fd != NULL){
+        int i;
+        for (i = 0; i<NUM_PINS; i++){
+            fscanf(fd, "%d", &list_pin[i]);
+        }
+    }
+    else {
+        int i;
+        for (i = 0; i<NUM_PINS; i++){
+            list_pin[i] = -1;
+        }
+    }
+}
 
-static int get_command_line_arguments(int argv, char** argc, FILE* input_file, FILE* output_file){
+static int get_command_line_arguments(int argv, char** argc, FILE** input_file, FILE** output_file){
     int pos_r = 1;
     while (pos_r < argv){
         char* arg = argc[pos_r];
@@ -74,9 +84,9 @@ static int get_command_line_arguments(int argv, char** argc, FILE* input_file, F
                 exit(1);
             }
             printf("arg2 %s\n", argc[pos_r + 1] );
-            input_file = fopen(argc[pos_r + 1], "r");
-            printf("input file: %p\n", input_file);
-            if (input_file == NULL){
+            *input_file = fopen(argc[pos_r + 1], "r");
+            printf("input file: %p\n", *input_file);
+            if (*input_file == NULL){
                 fprintf(stderr, "File specified \"%s\" doesn't exist.\n", argc[pos_r + 1]);
                 exit(1);
             }
@@ -90,7 +100,7 @@ static int get_command_line_arguments(int argv, char** argc, FILE* input_file, F
                 exit(1);
             }
             printf("arg2 %s\n", argc[pos_r + 1] );
-            output_file = fopen(argc[pos_r+1], "r");
+            *output_file = fopen(argc[pos_r+1], "r");
             if (output_file == NULL){
                 fprintf(stderr, "File specified \"%s\" doesn't exist.\n", argc[pos_r + 1]);
                 exit(1);

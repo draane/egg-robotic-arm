@@ -71,6 +71,8 @@ void kill_all_sons(int limit, pidpipe pin_pid_status[MAX_PINS]){
 }
 */
 
+void update_input_pins_from_file(int* pins_from_file);
+
 void signal_term_handler_children(int sig_int){
   if (sig_int == SIGTERM || sig_int == SIGINT){
     kill(getppid(), SIGTERM);
@@ -102,11 +104,7 @@ void child_pin_reader(int who_am_i){
 //TODO: Change MAX_INFO_TO_SEND_SIZE to an actual resonable value
 void input_manager(pidpipe pin_pid_status[MAX_PINS]){
   char msg[MAX_INFO_TO_SEND_SIZE];
-  PRINT("children_pids\n");
-  int i;
-  for (i = 0; i<8; i++){
-    PRINT("%d\n", children_pid[i]);
-  }
+  
   srand(time(NULL));
   for(;;){
     read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);
@@ -148,7 +146,6 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
   if(i == MAX_PINS){
     return ok;
   }else{
-    PRINT("Starting %i\n", i);
     pipe(pin_pid_status[i].pipe);
     int pid = fork();
     if(pid < 0){
@@ -180,9 +177,31 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
   }
 }
 
-void start_input(int inpipe, int outpipe){
+void update_input_pins_from_file(int* pins_from_file){
+  if (pins_from_file[0] != -1){ 
+    // if the first element != -1 then the option -if was specified, and the input_pins need to be updated.
+    PRINT("Input process received pins from file.\n");
+    int i;
+    for (i = 0; i<NUM_PINS; i++){
+      input_pin[i] = pins_from_file[i];
+    }
+  }
+  else {
+    PRINT("Input process didn't receive pins from file.\n");
+  }
+}
+
+void start_input(int inpipe, int outpipe, int* pins_from_file){
   // Parameters passed are the ends of the two pipes that the method will use to communicate with the manager.
   // Other ends have already been close by the manager process.
+  // The third parameter is the list of pins read from the input_pin_file (when option -if is specified).
+  // If no option is specified, then all elements of the list are -1.
+  
+  int i;
+  update_input_pins_from_file(pins_from_file);
+  for(i=0;i<NUM_PINS; i++){
+    PRINT("input process input_pin[%d]: %d\n", i, input_pin[i]);
+  }
 
   // Create the 8 child processes.
   pidpipe pin_pid_status[MAX_PINS];
