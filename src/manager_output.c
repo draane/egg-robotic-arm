@@ -66,7 +66,7 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
         kill(output_pin_pid[i+3], SIGNAL0);
       else
         kill(output_pin_pid[i+3], SIGNAL1);
-    } 
+    }
 
     // calculating values for pins representing number of egg to order, done
     // with bitwise and
@@ -103,8 +103,10 @@ void start_output(int pipe_write, int pipe_read) {
 
   //sets all the pid to -1, so in kill_all_sons it doesnt send kill signal to
   //non valid pids
-  for (i = 0; i<OUTPUT_PIN_NUMBER; i++)
+  for (i = 0; i<OUTPUT_PIN_NUMBER; i++) {
     output_pin_pid[i] = -1;
+    enable_pin(output_pin[i], OUT);
+  }
 
   output_read_pipe = pipe_read;
   output_write_pipe = pipe_write;
@@ -120,7 +122,6 @@ void start_output(int pipe_write, int pipe_read) {
       output_pin_controller(output_pin[i]);
     }
     else {
-      enable_pin(output_pin[i], OUT);
       output_pin_pid[i] = pid;
     }
   }
@@ -217,10 +218,10 @@ just call shutdown with different param depending in the signal recived
     PRINT("SIGTERM received by output.\n");
     shutdown(-1);
   }
-    
+
   else{
     PRINT("Received %d as signal of termination.\n", signal);
     shutdown(-2);
   }
-    
+
 }
