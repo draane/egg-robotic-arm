@@ -100,8 +100,7 @@ int read_pin(const int pin, int* res) {
 			return -1;
 
 		bytes_written = snprintf(buffer, BUFFER_MAX, "%d", pin);
-		if (write(fd, buffer, bytes_written) == -1)
-			return -2;
+		write(fd, buffer, bytes_written);
 
 		close(fd);
 		return 0;
