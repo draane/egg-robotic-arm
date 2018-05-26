@@ -144,7 +144,6 @@ void child_signal_handler(int n){
 }
 
 int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
-  enable_pin(input_pin[i], IN);
   if(i == MAX_PINS){
     return ok;
   }else{
@@ -183,7 +182,9 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
 void start_input(int inpipe, int outpipe){
   // Parameters passed are the ends of the two pipes that the method will use to communicate with the manager.
   // Other ends have already been close by the manager process.
-
+  int i;
+  for(i = 0; i< MAX_PINS; i++)
+    enable_pin(input_pin[i], IN);
   // Create the 8 child processes.
   pidpipe pin_pid_status[MAX_PINS];
   PRINT("Input reader started\n\n");
