@@ -109,7 +109,7 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
   }
   srand(time(NULL));
   for(;;){
-    read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);   
+    read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);
     if(strcmp(msg, START_MSG) != 0){  // Unexpected message.
       PRINT("Manager is missbehaving, killing myself\n");
       exit(1);
@@ -122,7 +122,7 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
         read(pin_pid_status[i].pipe[READ_PIPE], &res, sizeof(int));
       }
       PRINT("Read from %i > %i\n",i, res);
-      msg[i] = (res + OFFSET_OUTPUT_MSG); //Even more easy to read "bbbbbbbbb" -> all eggs are present 
+      msg[i] = (res + OFFSET_OUTPUT_MSG); //Even more easy to read "bbbbbbbbb" -> all eggs are present
     }
     msg[MAX_PINS] = '\0'; //Make it easy to ready and parse
 
@@ -133,7 +133,7 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
     message_to_send[0] = char_to_send;
     message_to_send[1] = '\0';
 
-    write(my_pipe[WRITE_PIPE], message_to_send, DIM_OF_MSG_PIPE);  
+    write(my_pipe[WRITE_PIPE], message_to_send, DIM_OF_MSG_PIPE);
   }
 }
 
@@ -144,8 +144,9 @@ void child_signal_handler(int n){
 }
 
 int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
+  enable_pin(input_pin[i], IN);
   if(i == MAX_PINS){
-    return ok; 
+    return ok;
   }else{
     PRINT("Starting %i\n", i);
     pipe(pin_pid_status[i].pipe);
@@ -154,13 +155,13 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
       PRINT("Fatal error occurred in the creation of a childi\n");
       return err;
     }else if(pid == 0){
-      //child process started here 
+      //child process started here
       //mypipe is used in signal function and other dark magic around
       my_pipe = pin_pid_status[i].pipe;
       //close the READ_PIPE first, to avoid being overrunned by bulshittery
-      close(my_pipe[READ_PIPE]); 
+      close(my_pipe[READ_PIPE]);
       //initialize the signal handler used to know that an input has to be piped
-      signal(UPDATE_SIGNAL, child_signal_handler); 
+      signal(UPDATE_SIGNAL, child_signal_handler);
       //signal(SIGTERM, signal_term_handler_children);
       //signal(SIGINT, signal_term_handler_children);
       //run the main child_pin_reader that just reads a pin and sleeps
@@ -174,7 +175,6 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
       pin_pid_status[i].pid = pid;
       children_pid[i] = pid;
       create_process(i+1, pin_pid_status);
-      enable_pin(input_pin[i], IN);
       return ok;
     }
   }
@@ -196,10 +196,10 @@ void start_input(int inpipe, int outpipe){
   //If here, you are father
   pipe_t p = { outpipe, inpipe };
   my_pipe = p;
-  
+
   signal (SIGTERM, signal_term_handler_parent);
   signal (SIGINT, signal_term_handler_parent);
-  
+
   input_manager(pin_pid_status);
 
 }
