@@ -78,3 +78,10 @@ The manager io basically makes any communication between the others managers pos
 #### **process input**
 Once the the input is recived in a char from the input manager it needs to be translated to be parsable by the output manager. Basically the char* is used as a bool array so that the first 6 char are either 'a' ( empty ) or 'b' ( present ) for the egg box sensors. The last 2 chars are the values in the warehouse.
 > **Tip:** a and b are not constants, they can be changed in utils.h. Basically they are calculated using the OFFSET_OUTPUT_MSG + ON or OFF macros.
+### **manager_input**
+The following is going to be splitted into two main part because as such the logic of the input manager is devided
+#### main part
+The main part has the responsibility to set things up and eventually communicate with the manager io when needed. The main part uses pipes to send data to the father as above described. Into itself, to communicate with the children, pipes and signal are used. When the triggering message is recived the main part sends out a signal to his children and then reads the output they provide from the individual pipe that they share.
+#### child
+In order to make the children as indipendent as possible, given that maybe they could have some heavy interpretation of the input to do, what was build was a system relying on signals to make the polling of the results. This way, once a child has elaborated the input and saved it, it could go on and elaborate the next one without having to waste time waiting for his father to need it and ask for it. Once the signal is recived from the father the result of the previous operation is sent in the signal handler.
+> **NOTE:** The variable used to save the value is of type integer on most of the systems, because that is the implementation of that type that usually is adopted. That special type is used to ensure that the equal operation is atomic 
