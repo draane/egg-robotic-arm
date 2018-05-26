@@ -27,5 +27,5 @@
   #define NUMBER_OF_EGGS_IN_THE_BOX 6
 
   // Raspberry 
-  //#define ON_THE_RASPBERRY
+  #define ON_THE_RASPBERRY
 #endif

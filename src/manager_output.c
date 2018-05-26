@@ -92,7 +92,7 @@ void start_output(int pipe_write, int pipe_read) {
   enable the pins,
   and then execute the output_manager process.
 */
-
+sleep(10);
   PRINT("Starting output processes...\n");
 
   pid_t father_pid = getppid();

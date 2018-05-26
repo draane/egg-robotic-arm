@@ -47,7 +47,7 @@ int set_pin(const int pin, const int value) {
 	#ifdef ON_THE_RASPBERRY
 		int r = GPIOWrite(pin, value);
     if (r != 0) {
-      PRINT ("Error: GPIOWrite failed! (%d)\n", r);
+      PRINT ("Error: GPIOWrite failed! (%d, pin: %d)\n", r, pin);
       return -1;
     }
   #endif
@@ -62,7 +62,7 @@ int read_pin(const int pin, int* res) {
   #ifdef ON_THE_RASPBERRY
     value = GPIORead(pin);
     if (value == -1) {
-      PRINT("Error: GPIORead failed!\n");
+      PRINT("Error: GPIORead failed!(pin: %d)\n", pin);
       return -1;
     }
   #endif
