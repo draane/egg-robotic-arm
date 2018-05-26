@@ -20,12 +20,13 @@
   // Max's stuff here
   #define START_MSG "1"
   #define OFFSET_OUTPUT_MSG 'a'
-  
+
 
   // Eggs and pins information
   #define NUMBER_OF_OUTPUT_BYTE 1
   #define NUMBER_OF_EGGS_IN_THE_BOX 6
 
-  // Raspberry 
-  #define ON_THE_RASPBERRY
+  // Raspberry
+  //#define ON_THE_RASPBERRY
+  #define NUM_PINS 8
 #endif

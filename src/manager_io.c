@@ -278,10 +278,11 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
 }
 
 
-void manager_io(void){
+void manager_io(int* input_pins_from_file, int* output_pins_from_file){
     // This process creates the two Input and Output manager processes,
     // Then manages all the interactions among them.
-
+    // It receives the two lists of input and output pins specified in the files.
+    // all values are -1 if no file is specified.
     // Prepare the 4 pipes for the two bidirectional communications.
     pipe(fd_input_manager);
     pipe(fd_manager_input);
@@ -300,8 +301,9 @@ void manager_io(void){
         close(fd_input_manager[READ_PIPE]);
         close(fd_manager_input[WRITE_PIPE]);
         PRINT("Initialize the input process.\n");
-        // Starts the input process.
-        start_input(fd_input_manager[WRITE_PIPE], fd_manager_input[READ_PIPE]);
+        // Starts the input process: the two pipe ends for reading and writing are passed, along with the 
+        // pins specified in the pin file (if no -if option is specified, then -1 is passed).
+        start_input(fd_input_manager[WRITE_PIPE], fd_manager_input[READ_PIPE], input_pins_from_file);
     }
     else {
         sleep(2);
@@ -326,7 +328,14 @@ void manager_io(void){
 
             PRINT("Initialize the output process\n");
             // Invokes the output process manager.
-            start_output(fd_output_manager[WRITE_PIPE], fd_manager_output[READ_PIPE]);
+            
+            int i;
+            
+            for (i = 0; i<NUM_PINS; i++){
+                PRINT("file pin %d: %d\n", i, output_pins_from_file[i]);
+            }
+            // the pins specified in the file are passed, among with the two pipe ends for reading and writing.
+            start_output(fd_output_manager[WRITE_PIPE], fd_manager_output[READ_PIPE], output_pins_from_file);
         }
         else {
             child_output = pid_output;
