@@ -28,4 +28,5 @@
 
   // Raspberry 
   //#define ON_THE_RASPBERRY
+  #define NUM_PINS 8
 #endif
