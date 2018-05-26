@@ -92,7 +92,7 @@ void signal_term_handler_parent(int sigint){
 //Just reads the pin and saves it into to_send
 void child_pin_reader(int who_am_i){
   for(;;){
-    read_pin(who_am_i, &to_send);
+    read_pin(input_pin[who_am_i], &to_send);
   }
 }
 
