@@ -25,18 +25,17 @@ int fd_manager_input[2];
 int fd_output_manager[2];
 int fd_manager_output[2];
 
-void manage_input_output(int, int, int, int, int, int);
-void trigger_input(int);
-char* read_input(int, int);
-void trigger_output(int);
-void write_output(int, int, int*);
+static void manage_input_output(int, int, int, int, int, int);
+static void trigger_input(int);
+static char* read_input(int, int);
+static void write_output(int, int, int*);
 static int* process_input(char *msg_received);
 static int count_eggs_in_the_box(unsigned int);
 static int count_eggs_in_the_warehouse(unsigned int);
-void sigterm_handler(int);
+static void sigterm_handler(int);
 static void shutdown();
 
-void shutdown(){
+static void shutdown(){
 
     close(fd_input_manager[READ_PIPE]);
     close(fd_manager_input[WRITE_PIPE]);
@@ -48,7 +47,7 @@ void shutdown(){
     exit(1);
 }
 
-void sigterm_handler(int signal_rec){
+static void sigterm_handler(int signal_rec){
     if (signal_rec == SIGINT){
         PRINT("Sigint received by master, killing sons and himself!\n");
         shutdown();
@@ -175,6 +174,7 @@ void trigger_input(int pipe_input_write){
     write(pipe_input_write, START_MSG, MAX_INFO_TO_SEND_SIZE);
 }
 
+
 char* read_input(int pipe_input_read, int pipe_input_write){
     // input just sends one string. No acks made.
     char * msg_received = malloc(sizeof(char) * 2);
@@ -184,26 +184,16 @@ char* read_input(int pipe_input_read, int pipe_input_write){
 
 }
 
-void trigger_output(int pipe_output_write){
-    /*
-     * 0) send "start" command to output.
-     */
-    PRINT("Message to send in output.\n");
-    write(pipe_output_write, START_MSG, DIM_OF_MSG_PIPE);
-    //PRINT("Message written \n");
-}
 
 void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
     // TODO: needs to take as parameter the information to pass to the output process.
     /*
      * Actions to perform:
-     * 0) Wait for the output "akc".
-     * 1) Write in output the information.
-     * 2) Write in output the "finish_output" command and read ack.
+     * 1) Write in output the information. (The integers are kept in the msg output list.)
+     * 2) wait for the output to finish.
      */
-    //PRINT("start message sent\n");
 
-    PRINT("ACK received after sending start\n");
+    //PRINT("ACK received after sending start\n");
     // 1) Write in output the information.
     int len; // length of the integer converted to string.
     char eggs_in_the_box[5];
@@ -231,13 +221,13 @@ void wait_for_output_to_finish(int pipe_output_read, int pipe_output_write){
     char msg_received[MAX_INFO_TO_SEND_SIZE];
     read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
 
-    // 2) Wait for ack.
+    // 2) Wait for finish_message from output to be able to resume the process.
     if (strcmp(msg_received, OUTPUT_FINISHES_MESSAGE) != 0){
         PRINT("manager didn't receive correctly: %s\n", msg_received);
         shutdown();
     }
     else {
-        //PRINT("switch to input.\n");
+        // Switch back to input.
     }
 }
 
@@ -248,30 +238,21 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
     signal(SIGINT, &sigterm_handler);
     signal(SIGTERM, &sigterm_handler);
     while (1){
-        // 0) Wait one second.
         sleep(1);
-
-        /* 1) Trigger the input pipe.
-         *      Send "start" to fetch input information, other to kill the process.
-         */
         trigger_input(pipe_input_write);
 
-        /* 2) Fetch information by the manager_input process.
-         *      Perform a series of read operation, acknowledged by "ack" messages.
-         */
+        /* 1) Fetch information (1 byte of data) by the manager_input process. */
         char* msg_received = read_input(pipe_input_read, pipe_input_write);
 
-        /* 3) Create output information based on the input received messages.
-         *      Still to decided how
-         *      TODO: create output information.
-         */
+        /* 2) Create output information based on the input received messages. */
         int* output = process_input(msg_received);
-        free(msg_received);
+        
 
-        //trigger_output(pipe_output_write);
         write_output(pipe_output_read, pipe_output_write, output);
+        free(msg_received); // Memory for message received was allocated dinamically.
+        free(output);  // memory for variable output was allocated dinamically.
 
-        /* 5) Wait for the end of the output_process (and mainly for the robotic arm).
+        /* 3) Wait for the end of the output_process (mainly for the robotic arm :'( ).
         */
         wait_for_output_to_finish(pipe_output_read, pipe_output_write);
     }
@@ -292,8 +273,8 @@ void manager_io(int* input_pins_from_file, int* output_pins_from_file){
     int pid_input = fork();
 
     if (pid_input < 0){
-        PRINT("Couldn't create the Input process. \n");
-        exit(1);
+        PRINT("Couldn't create the Input process. Closes all processes. \n");
+        shutdown();
     }
     else if (pid_input == 0){
         // Child process
