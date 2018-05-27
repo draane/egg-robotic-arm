@@ -70,6 +70,7 @@ static int get_command_line_arguments(int argv, char** argc, FILE** input_file, 
         char* arg = argc[pos_r];
         printf("arg1 %s\n", arg);
         if ((strcmp(arg, "-h") == 0) || (strcmp(arg, "--help") == 0)){
+            // If argument -h or --help is provided.
             printf("Usage: main.out [OPTION] [FILE]\n");
             printf("Welcome to the egg more or less robotic auto refiller program.\n");
             printf("\t-if, --input_file name_file: \tSet 8 GPIO pin for the RaspberryPi as\n\t\t\t\t\t 8 space separated integers.(example 0 1 2 3 4 5 6 7)\n");
@@ -85,7 +86,6 @@ static int get_command_line_arguments(int argv, char** argc, FILE** input_file, 
             }
             printf("arg2 %s\n", argc[pos_r + 1] );
             *input_file = fopen(argc[pos_r + 1], "r");
-            printf("input file: %p\n", *input_file);
             if (*input_file == NULL){
                 fprintf(stderr, "File specified \"%s\" doesn't exist.\n", argc[pos_r + 1]);
                 exit(1);
@@ -121,16 +121,16 @@ static int get_command_line_arguments(int argv, char** argc, FILE** input_file, 
           printf("           /` /`\n");
 
 
-          printf("\n"\
-"          /'._     _,\n"\
-"          \\   ;__.'  }\n"\
-"      (`-._;-\" _.--.}'\n"\
-"      /_'    /`    _}     _.--\"\"\"-.\n"\
-"        `.   \\_._.;     .' winner  \\\n"\
-"          '-.__ /      /    winner  |\n"\
-"           _/  `\\      \\  chicken   /\n"\
-"          ^`   ^`       '._ dinner.'\n"\
-"                           `\"\"\"\"\"`\n");
+          printf ("\n"\
+                  "          /'._     _,\n"\
+                  "          \\   ;__.'  }\n"\
+                  "      (`-._;-\" _.--.}'\n"\
+                  "      /_'    /`    _}     _.--\"\"\"-.\n"\
+                  "        `.   \\_._.;     .' winner  \\\n"\
+                  "          '-.__ /      /    winner  |\n"\
+                  "           _/  `\\      \\  chicken   /\n"\
+                  "          ^`   ^`       '._ dinner.'\n"\
+                  "                           `\"\"\"\"\"`\n");
           exit(0);
         }
         pos_r ++;
