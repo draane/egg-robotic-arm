@@ -13,7 +13,7 @@ void list_of_pins_from_file(FILE*, int*);
 
 int main(int argv, char** argc) {
     fprintf(stdout, "Start the main process \n");
-    
+
     FILE* input_file = NULL, *output_file=NULL;
     if (argv > 1){
         int return_message = get_command_line_arguments(argv, argc, &input_file, &output_file);
@@ -30,11 +30,11 @@ int main(int argv, char** argc) {
 
     // Pins from file are -1 if not defined option -if, -of, or the integers in the file otherwise.
 
-    // Update input list 
+    // Update input list from file (when provided option -if, otherwise -1).
     list_of_pins_from_file(input_file, input_pins_from_file);
-    // Update output list.
+    // Update output list from file (when option -of is provided, otherwise -1).
     list_of_pins_from_file(output_file, output_pins_from_file);
-    
+
     int pid_manager = fork();
     if (pid_manager == -1) {
         printf("Error: Could not create manager\n" );
@@ -42,7 +42,7 @@ int main(int argv, char** argc) {
     } else if(pid_manager > 0) {
         // to manager io the two lists of pins are passed.
         manager_io(input_pins_from_file, output_pins_from_file);
-    }else{
+    } else{
         exit(0); //fare nulla
     }
     return 0;
@@ -74,10 +74,10 @@ static int get_command_line_arguments(int argv, char** argc, FILE** input_file, 
             printf("Welcome to the egg more or less robotic auto refiller program.\n");
             printf("\t-if, --input_file name_file: \tSet 8 GPIO pin for the RaspberryPi as\n\t\t\t\t\t 8 space separated integers.(example 0 1 2 3 4 5 6 7)\n");
             printf("\t-of, --output_file name_file: \tSet 8 GPIO pin for the RaspberryPi as\n\t\t\t\t\t 8 space separated integers.\n");
-
+            exit(0);
         }
         else if ((strcmp(arg, "-if") == 0) || (strcmp(arg, "--input_file") == 0)){
-            
+
             printf("provided input file argument.\n");
             if (argv - pos_r == 1){
                 fprintf(stderr, "Error: you need to provide an additional argument, the name of the settings file.\n");
@@ -107,10 +107,33 @@ static int get_command_line_arguments(int argv, char** argc, FILE** input_file, 
             }
             pos_r ++;
         }
+        else if ((strcmp(arg, "-j")) == 0){
+          printf("          _\n");
+          printf("        _/ }\n");
+          printf("        `>' \\\n");
+          printf("        `|  \\\'\n");
+          printf("        |  /'-.    .-.\n");
+          printf("        \'   ';`--' .'\n");
+          printf("        \'.   `'-./\n");
+          printf("         '.`\"-..-;`\n");
+          printf("           `;-..'\n");
+          printf("           _| _|\n)");
+          printf("           /` /`\n");
 
+
+          printf("\n"\
+"          /'._     _,\n"\
+"          \\   ;__.'  }\n"\
+"      (`-._;-\" _.--.}'\n"\
+"      /_'    /`    _}     _.--\"\"\"-.\n"\
+"        `.   \\_._.;     .' winner  \\\n"\
+"          '-.__ /      /    winner  |\n"\
+"           _/  `\\      \\  chicken   /\n"\
+"          ^`   ^`       '._ dinner.'\n"\
+"                           `\"\"\"\"\"`\n");
+          exit(0);
+        }
         pos_r ++;
     }
-
     return 0;
 }
-
