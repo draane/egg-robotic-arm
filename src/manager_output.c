@@ -8,6 +8,7 @@
 #include "output_settings.h"
 #include "utils.h"
 #include "gpio.h"
+#include "serial.h"
 
 #define MAX_SEND_BUFFER_SIZE 2
 #define MAX_RECIVE_BUFFER_SIZE 2
@@ -19,6 +20,8 @@ int output_pin[] = { DEFAULT_OUTPUT_PINS_ARRAY };
 pid_t* output_pin_pid;
 pid_t output_father_pid;
 int output_read_pipe, output_write_pipe;
+//serial port fd
+int serial_port;
 
 
 static void kill_all_sons(void);
@@ -77,6 +80,20 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
       else
         kill(output_pin_pid[i+5], SIGNAL1);
     }
+
+    #ifdef ARM_INSTALLED
+      //send data to arduino
+      for (i = 0; i < 6; i++) {
+        int value = (arduino_value >> i) & 1;
+        if (value == 1) {
+          PRINT("Sending %d to the arduino\n");
+          if (send_message_to_arduino(serial_port, i+1) != 0) {
+            PRINT("Failed to send message to the arduino\n");
+            shutdown(-5);
+          }
+        }
+      }
+    #endif
 
     if (0 != write_data_to_manager(pipe_write, 0) ) {
       shutdown(42);
@@ -147,6 +164,15 @@ void start_output(int pipe_write, int pipe_read, int* pins_from_file) {
       output_pin_pid[i] = pid;
     }
   }
+
+  #ifdef ARM_INSTALLED
+    //initiate the serial port
+    serial_port = serial_start(-1, 9600);
+    if (serial_port == -1) {
+      PRINT("ERROR: Serial_start failed");
+      shutdown(-4);
+    }
+  #endif
 
   //set handler for SIGTERM
   signal(SIGTERM, output_manager_end_signal_handler);
@@ -228,6 +254,11 @@ and then close the process with the value of the param exit_value as return valu
 
   //send END signal to father
   kill(output_father_pid, SIGTERM);
+
+  #ifdef ARM_INSTALLED
+  //close the serial port
+  serial_close(serial_port);
+  #endif
 
   exit (exit_value);
 }

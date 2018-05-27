@@ -29,4 +29,7 @@
   // Raspberry
   //#define ON_THE_RASPBERRY
   #define NUM_PINS 8
+
+  // Robotic arm
+  //#define ARM_INSTALLED
 #endif
