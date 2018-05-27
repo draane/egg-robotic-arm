@@ -16,6 +16,8 @@
 
 #define OUTPUT_FINISHES_MESSAGE "0\0"
 
+#define LEN_OF_MESSAGE_TO_OUTPUT 2
+
 // Global variables for parent process;
 int child_input;
 int child_output;
@@ -109,11 +111,8 @@ unsigned char make_one_byte_from_string(char* str){
                 PRINT("Some error occurred: received %c\n", str[i]);
                 shutdown();
             }
-            //PRINT("Received string as unsigned integer %d\n", res);
         }
-        //PRINT("Received string as unsigned integer %d\n", res);
         res_char = res;
-        //PRINT("Received in char %u\n", res_char);
         return res_char;
     }
 }
@@ -130,8 +129,7 @@ static int* process_input(char* msg_received){
         - Eggs to order
         - Eggs to move with the robotic arm?
     */
-
-    //PRINT("Size of input string: %lu\n", strlen(msg_received));
+   
     if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE){
         PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", strlen(msg_received));
         shutdown();
@@ -160,17 +158,13 @@ static int* process_input(char* msg_received){
     output_msg[1] = eggs_int_the_warehouse;
     output_msg[2] = eggs_to_order;
 
-    //unsigned char output = generate_output(eggs_in_the_box, eggs_int_the_warehouse);
-
     PRINT("Generated output = %d, %d, %d\n", output_msg[0], output_msg[1], output_msg[2]);
     return output_msg;
 }
 
 
 void trigger_input(int pipe_input_write){
-    /*
-     * 0) send START command to input.
-     */
+    //send START command to input.
     write(pipe_input_write, START_MSG, MAX_INFO_TO_SEND_SIZE);
 }
 
@@ -190,38 +184,32 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
     /*
      * Actions to perform:
      * 1) Write in output the information. (The integers are kept in the msg output list.)
-     * 2) wait for the output to finish.
+     * 2) wait for the output to finish. (function "wait_for_output_to_finish").
      */
 
-    //PRINT("ACK received after sending start\n");
-    // 1) Write in output the information.
-    int len; // length of the integer converted to string.
-    char eggs_in_the_box[5];
-    len = sprintf(eggs_in_the_box, "%d", msg_output[0]);
-    eggs_in_the_box[len] = '\0';
-    char eggs_in_the_warehouse[5];
-    len = sprintf(eggs_in_the_warehouse, "%d", msg_output[1]);
-    eggs_in_the_warehouse[len] = '\0';
-    char eggs_to_order[5];
-    len = sprintf(eggs_to_order, "%d", msg_output[2]);
-    eggs_to_order[len] = '\0';
+    //int len; // length of the integer converted to string.
+    char eggs_in_the_box[LEN_OF_MESSAGE_TO_OUTPUT];
+    sprintf(eggs_in_the_box, "%d", msg_output[0]);
+    char eggs_in_the_warehouse[LEN_OF_MESSAGE_TO_OUTPUT];
+    sprintf(eggs_in_the_warehouse, "%d", msg_output[1]);
+    char eggs_to_order[LEN_OF_MESSAGE_TO_OUTPUT];
+    sprintf(eggs_to_order, "%d", msg_output[2]);
 
     PRINT("Manager produced these strings: %s, %s, %s\n", eggs_in_the_box, eggs_in_the_warehouse, eggs_to_order);
 
-    write(pipe_output_write, eggs_in_the_box, 2);
-    write(pipe_output_write, eggs_in_the_warehouse, 2);
-    write(pipe_output_write, eggs_to_order, 2);
-    // TODO: needs to be the value of the egg to move with the robotic arm.
-    write(pipe_output_write, eggs_to_order, 2);
+    write(pipe_output_write, eggs_in_the_box, LEN_OF_MESSAGE_TO_OUTPUT);
+    write(pipe_output_write, eggs_in_the_warehouse, LEN_OF_MESSAGE_TO_OUTPUT);
+    write(pipe_output_write, eggs_to_order, LEN_OF_MESSAGE_TO_OUTPUT);
+    // TODO: to fix the egg to move with the arm.
+    write(pipe_output_write, eggs_to_order, LEN_OF_MESSAGE_TO_OUTPUT);
 
-    free (msg_output);
 }
 
 void wait_for_output_to_finish(int pipe_output_read, int pipe_output_write){
     char msg_received[MAX_INFO_TO_SEND_SIZE];
     read (pipe_output_read, msg_received, MAX_INFO_TO_SEND_SIZE);
 
-    // 2) Wait for finish_message from output to be able to resume the process.
+    // Wait for finish_message from output to come to be able to resume the process back from beginning.
     if (strcmp(msg_received, OUTPUT_FINISHES_MESSAGE) != 0){
         PRINT("manager didn't receive correctly: %s\n", msg_received);
         shutdown();
@@ -233,12 +221,12 @@ void wait_for_output_to_finish(int pipe_output_read, int pipe_output_write){
 
 
 void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int pipe_input_write, int pipe_output_read, int pipe_output_write) {
-    //TODO: remove it!
-    srand(time(NULL));
+    // Subscribe the parent process to the handler for the correct termination.
     signal(SIGINT, &sigterm_handler);
     signal(SIGTERM, &sigterm_handler);
     while (1){
         sleep(1);
+        
         trigger_input(pipe_input_write);
 
         /* 1) Fetch information (1 byte of data) by the manager_input process. */
@@ -249,8 +237,8 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
         
 
         write_output(pipe_output_read, pipe_output_write, output);
-        free(msg_received); // Memory for message received was allocated dinamically.
-        free(output);  // memory for variable output was allocated dinamically.
+        free(msg_received); // Memory for message received is allocated dinamically.
+        free(output);  // memory for output list of integers is allocated dinamically.
 
         /* 3) Wait for the end of the output_process (mainly for the robotic arm :'( ).
         */

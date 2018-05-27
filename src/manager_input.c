@@ -55,27 +55,26 @@ enum okerr {
 
 //this area of the code is used only by the child processes
 pin_status_t to_send = NO_STATUS;
+pidpipe pin_pid_status[MAX_PINS];
 
 // Actually variable my_pipe is not a pipe, it's two different pipes' ends, one to read and one to write.
 int *my_pipe;
 //this is used by just the father as a global list of children's pids.
 int children_pid[MAX_PINS];
 
-/*
-//Kills all sons, used when a fatal error occurres or just
-//when the process has to be terminated
-void kill_all_sons(int limit, pidpipe pin_pid_status[MAX_PINS]){
-  for(int i = 0; i < limit; i++){
-    kill(pin_pid_status[i].pid,SIGKILL);
-  }
-}
-*/
+static void update_input_pins_from_file(int* pins_from_file);
+static void signal_term_handler_children(int sig_int);
+static void child_pin_reader(int who_am_i);
+static void input_manager();
+static void child_signal_handler(int n);
+static int create_process(int i);
+static void update_input_pins_from_file(int* pins_from_file);
 
-void update_input_pins_from_file(int* pins_from_file);
 
-void signal_term_handler_children(int sig_int){
+static void signal_term_handler_children(int sig_int){
   if (sig_int == SIGTERM || sig_int == SIGINT){
     kill(getppid(), SIGTERM);
+    close(my_pipe[WRITE_PIPE]);
     exit(1);
   }
 }
@@ -86,14 +85,19 @@ void signal_term_handler_parent(int sigint){
     int i;
     for ( i = 0; i<INPUT_PIN_NUMBER; i++){
       kill(children_pid[i], SIGTERM);
+      close(pin_pid_status[i].pipe[READ_PIPE]);
     }
+
+    close(my_pipe[READ_PIPE]);
+    close(my_pipe[WRITE_PIPE]);
+    // Propagate kill message to parent process.
     kill(getppid(), SIGTERM);
     exit(1);
   }
 }
 
 //Just reads the pin and saves it into to_send
-void child_pin_reader(int who_am_i){
+static void child_pin_reader(int who_am_i){
   for(;;){
     read_pin(input_pin[who_am_i], &to_send);
   }
@@ -103,7 +107,7 @@ void child_pin_reader(int who_am_i){
 //2) Writes output as a string in the pipe
 //3) GOTO 1
 //TODO: Change MAX_INFO_TO_SEND_SIZE to an actual resonable value
-void input_manager(pidpipe pin_pid_status[MAX_PINS]){
+static void input_manager(){
   char msg[MAX_INFO_TO_SEND_SIZE];
 
   srand(time(NULL));
@@ -136,13 +140,13 @@ void input_manager(pidpipe pin_pid_status[MAX_PINS]){
   }
 }
 
-void child_signal_handler(int n){
+static void child_signal_handler(int n){
   //TODO read from GPIO PIN
   PRINT("Reading pin.\n");
   write(my_pipe[WRITE_PIPE], &to_send, sizeof(pin_status_t));
 }
 
-int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
+static int create_process(int i){
   if(i == MAX_PINS){
     return ok;
   }else{
@@ -159,8 +163,8 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
       close(my_pipe[READ_PIPE]);
       //initialize the signal handler used to know that an input has to be piped
       signal(UPDATE_SIGNAL, child_signal_handler);
-      //signal(SIGTERM, signal_term_handler_children);
-      //signal(SIGINT, signal_term_handler_children);
+      signal(SIGTERM, signal_term_handler_children);
+      signal(SIGINT, signal_term_handler_children);
       //run the main child_pin_reader that just reads a pin and sleeps
       child_pin_reader(i);
       //unused return, just here for absolute security of termination
@@ -171,13 +175,13 @@ int create_process(int i, pidpipe pin_pid_status[MAX_PINS]){
       close(pin_pid_status[i].pipe[WRITE_PIPE]);
       pin_pid_status[i].pid = pid;
       children_pid[i] = pid;
-      create_process(i+1, pin_pid_status);
+      create_process(i+1);
       return ok;
     }
   }
 }
 
-void update_input_pins_from_file(int* pins_from_file){
+static void update_input_pins_from_file(int* pins_from_file){
   if (pins_from_file[0] != -1){
     // if the first element != -1 then the option -if was specified, and the input_pins need to be updated.
     PRINT("Input process received pins from file.\n");
@@ -201,12 +205,11 @@ void start_input(int inpipe, int outpipe, int* pins_from_file){
   // If no option is specified, then all elements of the list are -1.
   update_input_pins_from_file(pins_from_file);
   // Create the 8 child processes.
-  pidpipe pin_pid_status[MAX_PINS];
   PRINT("Input reader started\n\n");
-  int result = create_process(0, pin_pid_status);
+  int result = create_process(0);
   if(result != ok){
     // Some error has occurred.
-    exit(1);
+    kill(getppid(), SIGTERM);
   }
 
   //If here, you are father
@@ -216,6 +219,6 @@ void start_input(int inpipe, int outpipe, int* pins_from_file){
   signal (SIGTERM, signal_term_handler_parent);
   signal (SIGINT, signal_term_handler_parent);
 
-  input_manager(pin_pid_status);
+  input_manager();
 
 }
