@@ -28,7 +28,7 @@ A((main)) --> B((manager_io))
 B --> E((manager_input))
 B --> C((manager_output))
 ```
-### **manager_io** 
+### **manager_io**
 ```mermaid
 graph TD
 A((manager_io)) --> B(spawn manager_input)
@@ -65,7 +65,7 @@ E--SIG_USR1 OR SIG_USR2-->G
 ```
 ## How does communication work
 ### **General overview**
-In general inter process communication between the managers is achieved  via a strict protocol that every module has to comply to. Failing to follow the protocol flow will result in the program closing itself with a non-zero status. The protocol itself is based upon a pipe-based full duplex communication. The creation of the pipes is the manager_io job as better explained further in this document. Every child process expects to recive the content of the START_MSG  macro defined in the utils.h header file. 
+In general inter process communication between the managers is achieved  via a strict protocol that every module has to comply to. Failing to follow the protocol flow will result in the program closing itself with a non-zero status. The protocol itself is based upon a pipe-based full duplex communication. The creation of the pipes is the manager_io job as better explained further in this document. Every child process expects to recive the content of the START_MSG  macro defined in the utils.h header file.
 >**Note**: The size of the START_MSG **MUST** not exceed the MAX_INFO_TO_SEND_SIZE macro but ignorance of this rule does not lead to failed compilation although will cause the child process to be impossible to trigger.
 
 Once the child process recives the start message the response will be placed in the response pipe. The response is process dependant and it will be further discussed in the following paragraphers
@@ -82,14 +82,15 @@ The following is going to be splitted into two main part because as such the log
 The main part has the responsibility to set things up and eventually communicate with the manager io when needed. The main part uses pipes to send data to the father as above described. Into itself, to communicate with the children, pipes and signal are used. When the triggering message is recived the main part sends out a signal to his children and then reads the output they provide from the individual pipe that they share.
 #### child
 In order to make the children as indipendent as possible, given that maybe they could have some heavy interpretation of the input to do, what was build was a system relying on signals to make the polling of the results. This way, once a child has elaborated the input and saved it, it could go on and elaborate the next one without having to waste time waiting for his father to need it and ask for it. Once the signal is recived from the father the result of the previous operation is sent in the signal handler.
-> **NOTE:** The variable used to save the value is of type integer on most of the systems, because that is the implementation of that type that usually is adopted. That special type is used to ensure that the equal operation is atomic 
+> **NOTE:** The variable used to save the value is of type integer on most of the systems, because that is the implementation of that type that usually is adopted. That special type is used to ensure that the equal operation is atomic
 ### **manager_output**
 
 As the manager input, the manager output is mainly splitted in two parts, the main part, that is responsible to communicate with the manager_io, and the child part, that does what it gets ordered.
 #### main part
-The main part idles until data is recived from the manager_io. Once this happened the data gets parsed and eventually forwarded to the child process using signals.
+The main part set things up, like spawning the childs, enabling the pins and starting the serial comunucation with the arm. After that it idles until data is recived from the manager_io. Once this happened the data gets parsed and forwarded to the child process using signals, then comunicate with the robotic arm, if installed, sending data about where and how many eggs  move.
 
 #### child
-The child process idles and is limited to signal elaboration. Once a signal is recived it sets the correct GPIO to the correct status and goes back to idle  
+The child process idles and is limited to signal elaboration. Once a signal is recived it sets the correct GPIO to the correct status and goes back to idle.
+
 ## How does the frontend work
-The frontend is managed through an arduino nano that is a layer of abstraction between the GPIO, that expect a digital bit perfect signal on the pins, and the hardware that usually does need some fuzzling to have the expected behavior. The Arduino's job is to work just with the hardware so no major schematic is really needed to explain his code but the circuit is shown under. 
+The frontend is managed through an arduino nano that is a layer of abstraction between the GPIO, that expect a digital bit perfect signal on the pins, and the hardware that usually does need some fuzzling to have the expected behavior. The Arduino's job is to work just with the hardware so no major schematic is really needed to explain his code but the circuit is shown under.
