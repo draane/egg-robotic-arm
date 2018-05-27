@@ -80,7 +80,7 @@ static int get_command_line_arguments(int argv, char** argc, FILE** input_file, 
             printf("\t-of, --output_file name_file: \tSet 8 GPIO pin for the RaspberryPi as\n\t\t\t\t\t 8 space separated integers.\n");
             exit(0);
         }
-        else if ((strcmp(arg, "-if") == 0) || (strcmp(arg, "--input_file") == 0)){
+        else if (strcmp(arg, "-if") == 0){
             // Provided an input file. It needs to be specified an additional argument (the name of the file).
             printf("provided input file argument.\n");
             if (argv - pos_r == 1){
@@ -98,7 +98,26 @@ static int get_command_line_arguments(int argv, char** argc, FILE** input_file, 
             // pos_r is incremented twice, as the name of the file was read among with option -if.
             pos_r ++;
         }
+        /*
+        else if (strcmp(arg, "-input_file=", 12) == 0){
+            // Provided an input file. It needs to be specified an additional argument (the name of the file).
+            printf("provided input file argument.\n");
+            if (strlen(arg) <= 12 ){
+                // If it is not provided the name of the file, then terminate here.
+                fprintf(stderr, "Error: you need to provide the name of the file after =.\n");
+                exit(1);
+            }
 
+            *input_file = fopen(argc[pos_r + 1], "r");
+            if (*input_file == NULL){
+                // If no file has the name of the one specified, terminate here.
+                fprintf(stderr, "File specified \"%s\" doesn't exist.\n", argc[pos_r + 1]);
+                exit(1);
+            }
+            // pos_r is incremented twice, as the name of the file was read among with option -if.
+            pos_r ++;
+        }
+        */
         else if ((strcmp(arg, "-of") == 0) || (strcmp(arg, "--output_file") == 0)){
             // Provided an output file: it needs to have an additional argument
             printf("Provided output file argument.\n");

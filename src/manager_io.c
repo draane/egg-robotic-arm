@@ -110,7 +110,7 @@ static int generate_command_for_arm (unsigned int byte_received, int eggs_in_the
 unsigned char make_one_byte_from_string(char* str){
     unsigned char res_char = '\0';
     if (strlen(str) != 8){
-       PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %du received).\n", strlen(str));
+       PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", strlen(str));
        shutdown();
     }
     else {
@@ -149,7 +149,7 @@ static int* process_input(char* msg_received){
     */
 
     if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE && strlen(msg_received) != 0){
-        PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %du received).\n", strlen(msg_received));
+        PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", strlen(msg_received));
         shutdown();
     }
     int eggs_in_the_box;
