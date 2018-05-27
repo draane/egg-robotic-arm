@@ -88,6 +88,23 @@ static int count_eggs_in_the_warehouse(unsigned int byte_received){
     return res;
 }
 
+static int generate_command_for_arm (unsigned int byte_received, int eggs_in_the_warehouse){
+    int res = 0;
+    int list_of_eggs_to_move = byte_received;
+    int i = 0;
+    list_of_eggs_to_move = list_of_eggs_to_move & 63; // Mask 111111.
+    for (i = 0; i<NUMBER_OF_EGGS_IN_THE_BOX; i++){
+        int mask = 1;
+        int temp = list_of_eggs_to_move & mask;
+        if (temp == 1){
+            res = res | 1;
+        }
+        res = res << 1;
+    }
+
+    return res;
+}
+
 
 unsigned char make_one_byte_from_string(char* str){
     unsigned char res_char = '\0';
@@ -138,6 +155,7 @@ static int* process_input(char* msg_received){
     int eggs_in_the_warehouse;
     int eggs_to_move_to_box;
     int eggs_to_order;
+    int command_to_arm;
 
     if (strlen(msg_received) == NUMBER_OF_OUTPUT_BYTE){
       unsigned char byte_received = msg_received[0];
@@ -145,6 +163,7 @@ static int* process_input(char* msg_received){
       PRINT("Manager received : %d\n", byte_received);
       eggs_in_the_box = count_eggs_in_the_box(byte_received);
       eggs_in_the_warehouse = count_eggs_in_the_warehouse(byte_received);
+      command_to_arm = generate_command_for_arm(byte_received, eggs_in_the_warehouse);
 
       eggs_to_move_to_box = 6 - eggs_in_the_box;
       eggs_to_move_to_box = eggs_to_move_to_box > eggs_in_the_warehouse ?
@@ -169,12 +188,13 @@ static int* process_input(char* msg_received){
         eggs_to_order = 6;
     }
 
-    int* output_msg = malloc(sizeof(int) * 3);
+    int* output_msg = malloc(sizeof(int) * 4);
     output_msg[0] = eggs_in_the_box;
     output_msg[1] = eggs_to_move_to_box;
     output_msg[2] = eggs_to_order;
+    output_msg[3] = command_to_arm;
 
-    PRINT("Generated output = %d, %d, %d\n", output_msg[0], output_msg[1], output_msg[2]);
+    PRINT("Generated output = %d, %d, %d, %d\n", output_msg[0], output_msg[1], output_msg[2], output_msg[3]);
     return output_msg;
 }
 
