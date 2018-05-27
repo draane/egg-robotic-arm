@@ -102,7 +102,7 @@ static void input_manager(){
     read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);
     if(strcmp(msg, START_MSG) != 0){  // Unexpected message.
       PRINT("Manager is missbehaving, killing myself\n");
-      exit(1);
+      kill(getppid(), SIGTERM);
     }
     int i;
     for(i = 0; i<MAX_PINS; i++){
