@@ -107,4 +107,5 @@ int send_message_to_arduino (int fd, int message) {
 
 int serial_close(int port) {
   serialport_close(port);
+  return 0;
 }
