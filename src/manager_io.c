@@ -1,12 +1,8 @@
-
-#include"manager_input.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
-
 #include <signal.h>
 
 #include "utils.h"
@@ -22,6 +18,8 @@
 int child_input;
 int child_output;
 
+// 4 pipes for the two bidirectional communications among the
+// manager_io and the input_manager and manager_io and output_manager.
 int fd_input_manager[2];
 int fd_manager_input[2];
 int fd_output_manager[2];
@@ -52,26 +50,26 @@ static void shutdown(){
 static void sigterm_handler(int signal_rec){
     if (signal_rec == SIGINT){
         PRINT("Sigint received by master, killing sons and himself!\n");
-        shutdown();
     }
     if (signal_rec == SIGTERM){
         PRINT("Sigterm received by master, killing sons and himself!\n");
-        shutdown();
     }
+    shutdown();
 }
 
 static int count_eggs_in_the_box(unsigned int byte_received){
-    // mask with last three bits. 11111100 = 252;
+    // mask with last two bits set to zeo. 11111100 = 252;
     unsigned int mask= 252;
     unsigned int eggs = byte_received & mask;
     eggs = eggs >> 2;
-    //PRINT("Eggs in the box: %d\n", eggs);
+    // Counter of eggs found in the box.
     int counter = 0;
     int i;
     for (i = 0; i<NUMBER_OF_EGGS_IN_THE_BOX; i++){
         unsigned char mask = 1;
         unsigned char temp = eggs & mask;
         if (temp == 1){
+            // if found an egg increment the counter.
             counter ++;
         }
         eggs = eggs >> 1;
@@ -81,7 +79,7 @@ static int count_eggs_in_the_box(unsigned int byte_received){
 }
 
 static int count_eggs_in_the_warehouse(unsigned int byte_received){
-    // read last 2 bits. Mask is 3.
+    // read last 2 bits. Mask is 3 (11).
     unsigned char eggs_in_the_warehouse = byte_received & 3;
     int res = eggs_in_the_warehouse;
     PRINT("Eggs in the warehouse: %d\n", res);
@@ -104,9 +102,7 @@ static int generate_command_for_arm (unsigned int byte_received, int eggs_in_the
             counter_of_eggs_moved ++;
         }
         eggs_to_move = eggs_to_move >> 1;
-
     }
-
     return res;
 }
 
@@ -115,13 +111,13 @@ unsigned char make_one_byte_from_string(char* str){
     unsigned char res_char = '\0';
     if (strlen(str) != 8){
        PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", strlen(str));
-       exit(1);
+       shutdown();
     }
     else {
         unsigned int res = 0;
         unsigned int one = 1;
         int i;
-        for (i = 0; i < 8; i++){
+        for (i = 0; i < NUM_PINS; i++){
             res = res << 1;
             if (str[i] == 'a'){
                 // leave 0
@@ -337,15 +333,7 @@ void manager_io(int* input_pins_from_file, int* output_pins_from_file){
             // Closes the ends of the pipes it doesn't need.
             close(fd_manager_output[WRITE_PIPE]);
             close(fd_output_manager[READ_PIPE]);
-
-            PRINT("Initialize the output process\n");
             // Invokes the output process manager.
-
-            int i;
-
-            for (i = 0; i<NUM_PINS; i++){
-                PRINT("file pin %d: %d\n", i, output_pins_from_file[i]);
-            }
             // the pins specified in the file are passed, among with the two pipe ends for reading and writing.
             start_output(fd_output_manager[WRITE_PIPE], fd_manager_output[READ_PIPE], output_pins_from_file);
         }
@@ -360,6 +348,5 @@ void manager_io(int* input_pins_from_file, int* output_pins_from_file){
                                 fd_manager_input[WRITE_PIPE], fd_output_manager[READ_PIPE],
                                 fd_manager_output[WRITE_PIPE]);
         }
-
     }
 }
