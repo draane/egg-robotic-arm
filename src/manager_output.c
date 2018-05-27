@@ -169,7 +169,7 @@ void start_output(int pipe_write, int pipe_read, int* pins_from_file) {
     //initiate the serial port
     serial_port = serial_start(-1, 9600);
     if (serial_port == -1) {
-      PRINT("ERROR: Serial_start failed");
+      PRINT("ERROR: Serial_start failed\n");
       shutdown(-4);
     }
   #endif

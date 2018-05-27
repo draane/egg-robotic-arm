@@ -14,11 +14,9 @@
 
 #define ms_to_wait 100
 
-#define DEBUG 0
-
 int serial_start (int port_number, int baud)
 {
-  int fd;
+  int fd = -1;
   char base_port_string[13] = "/dev/ttyACM";
 
   char port_string[15];
