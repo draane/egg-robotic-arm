@@ -112,7 +112,8 @@ static int generate_command_for_arm (unsigned int byte_received, int eggs_in_the
 unsigned char make_one_byte_from_string(char* str){
     unsigned char res_char = '\0';
     if (strlen(str) != 8){
-       PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", strlen(str));
+       unsigned long int len = strlen(str);
+       PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", len);
        shutdown();
     }
     else {
@@ -150,8 +151,9 @@ static int* process_input(char* msg_received){
         - Eggs to move with the robotic arm?
     */
 
-    if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE && strlen(msg_received) != 0){
-        PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", strlen(msg_received));
+    if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE && strlen(msg_received) != 0) {
+        unsigned long int len = strlen(msg_received);
+        PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", len);
         shutdown();
     }
     int eggs_in_the_box;
