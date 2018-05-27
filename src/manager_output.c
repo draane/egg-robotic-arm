@@ -86,7 +86,7 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
       for (i = 0; i < 6; i++) {
         int value = (arduino_value >> i) & 1;
         if (value == 1) {
-          PRINT("Sending %d to the arduino\n");
+          PRINT("Sending %d to the arduino\n", i+1);
           if (send_message_to_arduino(serial_port, i+1) != 0) {
             PRINT("Failed to send message to the arduino\n");
             shutdown(-5);

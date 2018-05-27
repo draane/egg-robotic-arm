@@ -25,10 +25,10 @@ bin/gpio.o:
 	$(CC) -c src/gpio.c -o bin/gpio.o $(CFLAGS)
 
 bin/serial.o: bin/arduino-serial.o
-	$(CC) -c src/serial.c -o serial.o $(CFLAGS)
+	$(CC) -c src/serial.c -o bin/serial.o $(CFLAGS)
 
 bin/arduino-serial.o:
-		$(CC) -c src/arduino-serial.c -o arduino-serial.o $(CFLAGS)
+		$(CC) -c src/arduino-serial.c -o bin/arduino-serial.o $(CFLAGS)
 
 bin:
 	mkdir bin
