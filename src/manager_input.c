@@ -93,7 +93,6 @@ static void child_pin_reader(int who_am_i){
 static void input_manager(){
   char msg[MAX_INFO_TO_SEND_SIZE];
 
-  srand(time(NULL));
   for(;;){
     read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);
     if(strcmp(msg, START_MSG) != 0){  // Unexpected message.
