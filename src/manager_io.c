@@ -90,7 +90,7 @@ static int count_eggs_in_the_warehouse(unsigned int byte_received){
 
 
 unsigned char make_one_byte_from_string(char* str){
-    unsigned char res_char;
+    unsigned char res_char[LEN_OF_MESSAGE_TO_OUTPUT];
     if (strlen(str) != 8){
        PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", strlen(str));
        shutdown();
@@ -105,14 +105,14 @@ unsigned char make_one_byte_from_string(char* str){
                 // leave 0
             }
             else if (str[i] == 'b'){
-                res = res | one;
+                res[0] = res[0] | one;
             }
             else {
                 PRINT("Some error occurred: received %c\n", str[i]);
                 shutdown();
             }
         }
-        res_char = res;
+        sprintf(res_char, "%d", res);
         return res_char;
     }
     return '0';
@@ -130,7 +130,7 @@ static int* process_input(char* msg_received){
         - Eggs to order
         - Eggs to move with the robotic arm?
     */
-   
+
     if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE){
         PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", strlen(msg_received));
         shutdown();
@@ -230,7 +230,7 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
     signal(SIGTERM, &sigterm_handler);
     while (1){
         sleep(1);
-        
+
         trigger_input(pipe_input_write);
 
         /* 1) Fetch information (1 byte of data) by the manager_input process. */
@@ -238,7 +238,7 @@ void manage_input_output(int pid_input, int pid_output, int pipe_input_read, int
 
         /* 2) Create output information based on the input received messages. */
         int* output = process_input(msg_received);
-        
+
 
         write_output(pipe_output_read, pipe_output_write, output);
         free(msg_received); // Memory for message received is allocated dinamically.
@@ -274,7 +274,7 @@ void manager_io(int* input_pins_from_file, int* output_pins_from_file){
         close(fd_input_manager[READ_PIPE]);
         close(fd_manager_input[WRITE_PIPE]);
         PRINT("Initialize the input process.\n");
-        // Starts the input process: the two pipe ends for reading and writing are passed, along with the 
+        // Starts the input process: the two pipe ends for reading and writing are passed, along with the
         // pins specified in the pin file (if no -if option is specified, then -1 is passed).
         start_input(fd_input_manager[WRITE_PIPE], fd_manager_input[READ_PIPE], input_pins_from_file);
     }
@@ -301,9 +301,9 @@ void manager_io(int* input_pins_from_file, int* output_pins_from_file){
 
             PRINT("Initialize the output process\n");
             // Invokes the output process manager.
-            
+
             int i;
-            
+
             for (i = 0; i<NUM_PINS; i++){
                 PRINT("file pin %d: %d\n", i, output_pins_from_file[i]);
             }
