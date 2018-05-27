@@ -1,6 +1,7 @@
 /*
- * created by: Andrea Dalla Costa (andraane@libero.it)
- * using: arduino-serial by Tod E. Kurt, http://todbot.com/blog/
+ * usefull wrapper to write reliable comands to an arduino Mega
+ * created by: Andrea Dalla Costa (andraane@libero.it) - 2016
+ * based on: arduino-serial by Tod E. Kurt, http://todbot.com/blog/
  */
 
 #include <stdio.h>    // Standard input/output definitions
