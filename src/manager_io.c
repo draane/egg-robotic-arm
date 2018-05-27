@@ -1,12 +1,7 @@
-
-#include"manager_input.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <time.h>
-
 #include <signal.h>
 
 #include "utils.h"
@@ -22,6 +17,8 @@
 int child_input;
 int child_output;
 
+// 4 pipes for the two bidirectional communications among the
+// manager_io and the input_manager and manager_io and output_manager.
 int fd_input_manager[2];
 int fd_manager_input[2];
 int fd_output_manager[2];
@@ -52,26 +49,26 @@ static void shutdown(){
 static void sigterm_handler(int signal_rec){
     if (signal_rec == SIGINT){
         PRINT("Sigint received by master, killing sons and himself!\n");
-        shutdown();
     }
     if (signal_rec == SIGTERM){
         PRINT("Sigterm received by master, killing sons and himself!\n");
-        shutdown();
     }
+    shutdown();
 }
 
 static int count_eggs_in_the_box(unsigned int byte_received){
-    // mask with last three bits. 11111100 = 252;
+    // mask with last two bits set to zeo. 11111100 = 252;
     unsigned int mask= 252;
     unsigned int eggs = byte_received & mask;
     eggs = eggs >> 2;
-    //PRINT("Eggs in the box: %d\n", eggs);
+    // Counter of eggs found in the box.
     int counter = 0;
     int i;
     for (i = 0; i<NUMBER_OF_EGGS_IN_THE_BOX; i++){
         unsigned char mask = 1;
         unsigned char temp = eggs & mask;
         if (temp == 1){
+            // if found an egg increment the counter.
             counter ++;
         }
         eggs = eggs >> 1;
@@ -81,7 +78,7 @@ static int count_eggs_in_the_box(unsigned int byte_received){
 }
 
 static int count_eggs_in_the_warehouse(unsigned int byte_received){
-    // read last 2 bits. Mask is 3.
+    // read last 2 bits. Mask is 3 (11).
     unsigned char eggs_in_the_warehouse = byte_received & 3;
     int res = eggs_in_the_warehouse;
     PRINT("Eggs in the warehouse: %d\n", res);
@@ -89,19 +86,24 @@ static int count_eggs_in_the_warehouse(unsigned int byte_received){
 }
 
 static int generate_command_for_arm (unsigned int byte_received, int eggs_in_the_warehouse){
-    int res = 0;
-    int list_of_eggs_to_move = byte_received;
+    unsigned int mask= 252;
+    unsigned int eggs_to_move = byte_received & mask;
+    eggs_to_move = eggs_to_move >> 2;
     int i = 0;
-    list_of_eggs_to_move = list_of_eggs_to_move & 63; // Mask 111111.
+    int counter_of_eggs_moved = 0; // This counter can't be bigger than eggs_in_the_warehouse.
+    int res = 0;
     for (i = 0; i<NUMBER_OF_EGGS_IN_THE_BOX; i++){
         int mask = 1;
-        int temp = list_of_eggs_to_move & mask;
-        if (temp == 1){
+        int temp = eggs_to_move & mask;
+        if (temp == 0 && counter_of_eggs_moved < eggs_in_the_warehouse){
             res = res | 1;
+            counter_of_eggs_moved ++;
         }
-        res = res << 1;
+        eggs_to_move = eggs_to_move >> 1;
+        if (i != NUMBER_OF_EGGS_IN_THE_BOX-1){
+            res = res << 1;
+        }
     }
-
     return res;
 }
 
@@ -109,14 +111,15 @@ static int generate_command_for_arm (unsigned int byte_received, int eggs_in_the
 unsigned char make_one_byte_from_string(char* str){
     unsigned char res_char = '\0';
     if (strlen(str) != 8){
-       PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", strlen(str));
-       exit(1);
+       unsigned long int len = strlen(str);
+       PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", len);
+       shutdown();
     }
     else {
         unsigned int res = 0;
         unsigned int one = 1;
         int i;
-        for (i = 0; i < 8; i++){
+        for (i = 0; i < NUM_PINS; i++){
             res = res << 1;
             if (str[i] == 'a'){
                 // leave 0
@@ -147,8 +150,9 @@ static int* process_input(char* msg_received){
         - Eggs to move with the robotic arm?
     */
 
-    if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE && strlen(msg_received) != 0){
-        PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", strlen(msg_received));
+    if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE && strlen(msg_received) != 0) {
+        unsigned long int len = strlen(msg_received);
+        PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", len);
         shutdown();
     }
     int eggs_in_the_box;
@@ -186,6 +190,7 @@ static int* process_input(char* msg_received){
         eggs_in_the_box = 0;
         eggs_to_move_to_box = 0;
         eggs_to_order = 6;
+        command_to_arm = 0;
     }
 
     int* output_msg = malloc(sizeof(int) * 4);
@@ -201,7 +206,7 @@ static int* process_input(char* msg_received){
 
 void trigger_input(int pipe_input_write){
     //send START command to input.
-    write(pipe_input_write, START_MSG, MAX_INFO_TO_SEND_SIZE);
+    write(pipe_input_write, START_MSG, DIM_OF_MSG_PIPE);
 }
 
 
@@ -216,7 +221,6 @@ char* read_input(int pipe_input_read, int pipe_input_write){
 
 
 void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
-    // TODO: needs to take as parameter the information to pass to the output process.
     /*
      * Actions to perform:
      * 1) Write in output the information. (The integers are kept in the msg output list.)
@@ -230,14 +234,15 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
     sprintf(eggs_in_the_warehouse, "%d", msg_output[1]);
     char eggs_to_order[LEN_OF_MESSAGE_TO_OUTPUT];
     sprintf(eggs_to_order, "%d", msg_output[2]);
+    char command_to_arm[LEN_OF_MESSAGE_TO_OUTPUT];
+    sprintf(command_to_arm, "%d", msg_output[3]);
 
-    PRINT("Manager produced these strings: %s, %s, %s\n", eggs_in_the_box, eggs_in_the_warehouse, eggs_to_order);
+    PRINT("Manager produced these strings: %s, %s, %s, %s\n", eggs_in_the_box, eggs_in_the_warehouse, eggs_to_order, command_to_arm);
 
     write(pipe_output_write, eggs_in_the_box, LEN_OF_MESSAGE_TO_OUTPUT);
     write(pipe_output_write, eggs_in_the_warehouse, LEN_OF_MESSAGE_TO_OUTPUT);
     write(pipe_output_write, eggs_to_order, LEN_OF_MESSAGE_TO_OUTPUT);
-    // TODO: to fix the egg to move with the arm.
-    write(pipe_output_write, eggs_to_order, LEN_OF_MESSAGE_TO_OUTPUT);
+    write(pipe_output_write, command_to_arm, LEN_OF_MESSAGE_TO_OUTPUT);
 
 }
 
@@ -330,15 +335,7 @@ void manager_io(int* input_pins_from_file, int* output_pins_from_file){
             // Closes the ends of the pipes it doesn't need.
             close(fd_manager_output[WRITE_PIPE]);
             close(fd_output_manager[READ_PIPE]);
-
-            PRINT("Initialize the output process\n");
             // Invokes the output process manager.
-
-            int i;
-
-            for (i = 0; i<NUM_PINS; i++){
-                PRINT("file pin %d: %d\n", i, output_pins_from_file[i]);
-            }
             // the pins specified in the file are passed, among with the two pipe ends for reading and writing.
             start_output(fd_output_manager[WRITE_PIPE], fd_manager_output[READ_PIPE], output_pins_from_file);
         }
@@ -353,6 +350,5 @@ void manager_io(int* input_pins_from_file, int* output_pins_from_file){
                                 fd_manager_input[WRITE_PIPE], fd_output_manager[READ_PIPE],
                                 fd_manager_output[WRITE_PIPE]);
         }
-
     }
 }

@@ -5,9 +5,6 @@
 #include<sys/types.h>
 #include<string.h>
 
-// TODO: remove it from code when random is not needed anymore.
-#include <time.h>
-
 #include "manager_input.h"
 #include "manager_io.h"
 #include "utils.h"
@@ -93,11 +90,9 @@ static void child_pin_reader(int who_am_i){
 //1) Expects a message START_MSG from the pipe
 //2) Writes output as a string in the pipe
 //3) GOTO 1
-//TODO: Change MAX_INFO_TO_SEND_SIZE to an actual resonable value
 static void input_manager(){
   char msg[MAX_INFO_TO_SEND_SIZE];
 
-  srand(time(NULL));
   for(;;){
     read(my_pipe[READ_PIPE], msg, MAX_INFO_TO_SEND_SIZE);
     if(strcmp(msg, START_MSG) != 0){  // Unexpected message.
@@ -128,7 +123,6 @@ static void input_manager(){
 }
 
 static void child_signal_handler(int n){
-  //TODO read from GPIO PIN
   PRINT("Reading pin.\n");
   write(my_pipe[WRITE_PIPE], &to_send, sizeof(pin_status_t));
 }

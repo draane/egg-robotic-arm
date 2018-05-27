@@ -9,6 +9,8 @@
   #else
     #define PRINT(x) ;
   #endif
+  // comment when arm is not installed.
+  // #define ARM_INSTALLED 1
 
   // Hubi&Costa's stuff here.
   #define READ_PIPE 0
@@ -29,4 +31,7 @@
   // Raspberry
   //#define ON_THE_RASPBERRY
   #define NUM_PINS 8
+
+  // Robotic arm
+  //#define ARM_INSTALLED
 #endif
