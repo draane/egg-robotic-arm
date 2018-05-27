@@ -89,17 +89,22 @@ static int count_eggs_in_the_warehouse(unsigned int byte_received){
 }
 
 static int generate_command_for_arm (unsigned int byte_received, int eggs_in_the_warehouse){
-    int res = 0;
-    int list_of_eggs_to_move = byte_received;
+    unsigned int mask= 252;
+    unsigned int eggs_to_move = byte_received & mask;
+    eggs_to_move = eggs_to_move >> 2;
     int i = 0;
-    list_of_eggs_to_move = list_of_eggs_to_move & 63; // Mask 111111.
+    int counter_of_eggs_moved = 0; // This counter can't be bigger than eggs_in_the_warehouse.
+    int res = 0;
     for (i = 0; i<NUMBER_OF_EGGS_IN_THE_BOX; i++){
-        int mask = 1;
-        int temp = list_of_eggs_to_move & mask;
-        if (temp == 1){
-            res = res | 1;
-        }
         res = res << 1;
+        int mask = 1;
+        int temp = eggs_to_move & mask;
+        if (temp == 0 && counter_of_eggs_moved < eggs_in_the_warehouse){
+            res = res | 1;
+            counter_of_eggs_moved ++;
+        }
+        eggs_to_move = eggs_to_move >> 1;
+
     }
 
     return res;
@@ -230,14 +235,16 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
     sprintf(eggs_in_the_warehouse, "%d", msg_output[1]);
     char eggs_to_order[LEN_OF_MESSAGE_TO_OUTPUT];
     sprintf(eggs_to_order, "%d", msg_output[2]);
+    char command_to_arm[LEN_OF_MESSAGE_TO_OUTPUT];
+    sprintf(command_to_arm, "%d", msg_output[3]);
 
-    PRINT("Manager produced these strings: %s, %s, %s\n", eggs_in_the_box, eggs_in_the_warehouse, eggs_to_order);
+    PRINT("Manager produced these strings: %s, %s, %s, %s\n", eggs_in_the_box, eggs_in_the_warehouse, eggs_to_order, command_to_arm);
 
     write(pipe_output_write, eggs_in_the_box, LEN_OF_MESSAGE_TO_OUTPUT);
     write(pipe_output_write, eggs_in_the_warehouse, LEN_OF_MESSAGE_TO_OUTPUT);
     write(pipe_output_write, eggs_to_order, LEN_OF_MESSAGE_TO_OUTPUT);
     // TODO: to fix the egg to move with the arm.
-    write(pipe_output_write, eggs_to_order, LEN_OF_MESSAGE_TO_OUTPUT);
+    write(pipe_output_write, command_to_arm, LEN_OF_MESSAGE_TO_OUTPUT);
 
 }
 

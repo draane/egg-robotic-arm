@@ -177,7 +177,7 @@ returns 0 if everything went define, other values if errors appened
   *par1 = parameters[0];
   *par2 = parameters[1];
   *par3 = parameters[2];
-  *par4 = parameters[2];
+  *par4 = parameters[3];
 
   return 0;
 }
