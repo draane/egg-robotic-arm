@@ -90,10 +90,10 @@ static int count_eggs_in_the_warehouse(unsigned int byte_received){
 
 
 unsigned char make_one_byte_from_string(char* str){
-    unsigned char res_char[LEN_OF_MESSAGE_TO_OUTPUT];
+    unsigned char res_char = '\0';
     if (strlen(str) != 8){
        PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", strlen(str));
-       shutdown();
+       exit(1);
     }
     else {
         unsigned int res = 0;
@@ -105,17 +105,16 @@ unsigned char make_one_byte_from_string(char* str){
                 // leave 0
             }
             else if (str[i] == 'b'){
-                res[0] = res[0] | one;
+                res = res | one;
             }
             else {
                 PRINT("Some error occurred: received %c\n", str[i]);
                 shutdown();
             }
         }
-        sprintf(res_char, "%d", res);
-        return res_char;
+        res_char = res;
     }
-    return '0';
+    return res_char;
 }
 
 static int* process_input(char* msg_received){
@@ -131,30 +130,43 @@ static int* process_input(char* msg_received){
         - Eggs to move with the robotic arm?
     */
 
-    if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE){
+    if (strlen(msg_received) != NUMBER_OF_OUTPUT_BYTE && strlen(msg_received) != 0){
         PRINT("Some error occurred: the input process printed a wrong number of pins status(1 correct, %lu received).\n", strlen(msg_received));
         shutdown();
     }
-
-    unsigned char byte_received = msg_received[0];
-
-    PRINT("Manager received : %d\n", byte_received);
-    int eggs_in_the_box = count_eggs_in_the_box(byte_received);
-    int eggs_in_the_warehouse = count_eggs_in_the_warehouse(byte_received);
-
-    int eggs_to_move_to_box = 6 - eggs_in_the_box;
-    eggs_to_move_to_box = eggs_to_move_to_box > eggs_in_the_warehouse ? 
-                        eggs_in_the_warehouse : 
-                        eggs_to_move_to_box;
+    int eggs_in_the_box;
+    int eggs_in_the_warehouse;
+    int eggs_to_move_to_box;
     int eggs_to_order;
-    if (eggs_in_the_warehouse == 3){
-        eggs_to_order = 0;
+
+    if (strlen(msg_received) == NUMBER_OF_OUTPUT_BYTE){
+      unsigned char byte_received = msg_received[0];
+
+      PRINT("Manager received : %d\n", byte_received);
+      eggs_in_the_box = count_eggs_in_the_box(byte_received);
+      eggs_in_the_warehouse = count_eggs_in_the_warehouse(byte_received);
+
+      eggs_to_move_to_box = 6 - eggs_in_the_box;
+      eggs_to_move_to_box = eggs_to_move_to_box > eggs_in_the_warehouse ?
+                            eggs_in_the_warehouse:
+                            eggs_to_move_to_box;
+
+
+      if (eggs_in_the_warehouse == 3){
+          eggs_to_order = 0;
+      }
+      else {
+          eggs_to_order = 6 - eggs_in_the_box - eggs_to_move_to_box;
+          if (eggs_to_order < 0){
+              eggs_to_order = 0;
+          }
+      }
     }
     else {
-        eggs_to_order = 6 - eggs_in_the_box - eggs_to_move_to_box;
-        if (eggs_to_order < 0){
-            eggs_to_order = 0;
-        }
+      // We received an empty char, which is considered as '\0' terminator character.
+        eggs_in_the_box = 0;
+        eggs_to_move_to_box = 0;
+        eggs_to_order = 6;
     }
 
     int* output_msg = malloc(sizeof(int) * 3);
