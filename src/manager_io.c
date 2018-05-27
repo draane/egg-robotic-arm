@@ -189,6 +189,7 @@ static int* process_input(char* msg_received){
         eggs_in_the_box = 0;
         eggs_to_move_to_box = 0;
         eggs_to_order = 6;
+        command_to_arm = 0;
     }
 
     int* output_msg = malloc(sizeof(int) * 4);
