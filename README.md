@@ -1,6 +1,7 @@
 
 # Welcome to Egg Robotic Arm!
 This is an implementation of a multiprocess egg dispenser thought and builded to support interchangable input and output modules.
+![Image](https://drive.google.com/file/d/1zAJAcyNrisjH8XyAU-q8mPNsX7vYiurP/view?usp=sharing)
 
 ## Fast project map
 |File name  |Description                                               
@@ -90,3 +91,5 @@ The main part idles until data is recived from the manager_io. Once this happene
 
 #### child
 The child process idles and is limited to signal elaboration. Once a signal is recived it sets the correct GPIO to the correct status and goes back to idle  
+## How does the frontend work
+The frontend is managed through an arduino nano that is a layer of abstraction between the GPIO, that expect a digital bit perfect signal on the pins, and the hardware that usually does need some fuzzling to have the expected behavior. The Arduino's job is to work just with the hardware so no major schematic is really needed to explain his code but the circuit is shown under. 
