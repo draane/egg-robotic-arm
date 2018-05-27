@@ -9,6 +9,8 @@
   #else
     #define PRINT(x) ;
   #endif
+  // comment when arm is not installed.
+  // #define ARM_INSTALLED 1
 
   // Hubi&Costa's stuff here.
   #define READ_PIPE 0

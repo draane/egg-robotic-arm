@@ -50,13 +50,16 @@ int main(int argv, char** argc) {
 
 
 void list_of_pins_from_file(FILE* fd, int* list_pin){
+    // If fd is NULL, then the option -if or -of (depending on the fd passed) was not specified.
     if (fd != NULL){
+        // If the file exists, then update the vector list_pin.
         int i;
         for (i = 0; i<NUM_PINS; i++){
             fscanf(fd, "%d", &list_pin[i]);
         }
     }
     else {
+        // Otherwise set all pins to -1.
         int i;
         for (i = 0; i<NUM_PINS; i++){
             list_pin[i] = -1;
@@ -78,33 +81,40 @@ static int get_command_line_arguments(int argv, char** argc, FILE** input_file, 
             exit(0);
         }
         else if ((strcmp(arg, "-if") == 0) || (strcmp(arg, "--input_file") == 0)){
-
+            // Provided an input file. It needs to be specified an additional argument (the name of the file).
             printf("provided input file argument.\n");
             if (argv - pos_r == 1){
+                // If it is not provided the name of the file, then terminate here.
                 fprintf(stderr, "Error: you need to provide an additional argument, the name of the settings file.\n");
                 exit(1);
             }
             printf("arg2 %s\n", argc[pos_r + 1] );
             *input_file = fopen(argc[pos_r + 1], "r");
             if (*input_file == NULL){
+                // If no file has the name of the one specified, terminate here.
                 fprintf(stderr, "File specified \"%s\" doesn't exist.\n", argc[pos_r + 1]);
                 exit(1);
             }
+            // pos_r is incremented twice, as the name of the file was read among with option -if.
             pos_r ++;
         }
 
         else if ((strcmp(arg, "-of") == 0) || (strcmp(arg, "--output_file") == 0)){
+            // Provided an output file: it needs to have an additional argument
             printf("Provided output file argument.\n");
             if (argv - pos_r == 1){
+              // If no additional argument is specified (the name of the file), terminate here.
                 fprintf(stderr, "Error: you need to provide an additional argument, the name of the settings file.\n");
                 exit(1);
             }
             printf("arg2 %s\n", argc[pos_r + 1] );
             *output_file = fopen(argc[pos_r+1], "r");
             if (output_file == NULL){
+                // If no file has the name of the one specified, terminate here.
                 fprintf(stderr, "File specified \"%s\" doesn't exist.\n", argc[pos_r + 1]);
                 exit(1);
             }
+            // pos_r is incremented twice, as the name of the file was read among with option -of.
             pos_r ++;
         }
         else if ((strcmp(arg, "-j")) == 0){

@@ -50,7 +50,6 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
     }
 
     int i; // just a counter
-
     // calculating values for pins representing number of egg in the case, done
     // with bitwise and
     for (i = 0; i < 3; i++) {

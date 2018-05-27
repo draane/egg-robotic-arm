@@ -202,7 +202,7 @@ static int* process_input(char* msg_received){
 
 void trigger_input(int pipe_input_write){
     //send START command to input.
-    write(pipe_input_write, START_MSG, MAX_INFO_TO_SEND_SIZE);
+    write(pipe_input_write, START_MSG, DIM_OF_MSG_PIPE);
 }
 
 
