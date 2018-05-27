@@ -32,8 +32,6 @@ static int get_data_from_manager (const int pipe, int* par1, int* par2, int* par
 static int write_data_to_manager (const int pipe, const int par);
 
 void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
-
-
 /*
   Wait for information from the pipe,, calculate the output
   and then send a signal to each output_pin process.
@@ -46,7 +44,6 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
   for ever {
     if (0 != get_data_from_manager(pipe_read, &eggs_in_the_case, &eggs_to_move, &eggs_to_order, &arduino_value) ) {
       shutdown(1);
-
     }
 
     int i; // just a counter
@@ -102,18 +99,18 @@ void output_manager(int pipe_write, int pipe_read, pid_t father_pid) {
   shutdown(25);
 }
 
-void update_pins_from_file(int* pins_from_file){
+void update_pins_from_file(int* pins_from_file) {
 
-  if (pins_from_file[0] != -1){
+  if (pins_from_file[0] != -1) {
     // If first element is -1, then option -of was not specified.
     //Otherwise update pins with the ones specified in the file.
     int i;
     PRINT("Output process received pins from file.\n");
-    for (i=0; i<OUTPUT_PIN_NUMBER; i++){
+    for (i=0; i<OUTPUT_PIN_NUMBER; i++) {
       output_pin[i] = pins_from_file[i];
     }
   }
-  else{
+  else {
     PRINT("Output process didn't receive pins from file.\n");
   }
 }
@@ -134,10 +131,6 @@ void start_output(int pipe_write, int pipe_read, int* pins_from_file) {
 
   // Update pins from default if -of is specified from command line.
   update_pins_from_file(pins_from_file);
-
-  for (i = 0; i<NUM_PINS; i++){
-    PRINT("output pin[%d]: %d\n", i, output_pin[i]);
-  }
 
   //sets all the pid to -1, so in kill_all_sons it doesnt send kill signal to
   //non valid pids
@@ -266,12 +259,12 @@ static void output_manager_end_signal_handler (int signal) {
 /*
 just call shutdown with different param depending in the signal recived
 */
-  if (signal == SIGTERM){
+  if (signal == SIGTERM) {
     PRINT("SIGTERM received by output.\n");
     shutdown(-1);
   }
 
-  else{
+  else {
     PRINT("Received %d as signal of termination.\n", signal);
     shutdown(-2);
   }

@@ -220,7 +220,6 @@ char* read_input(int pipe_input_read, int pipe_input_write){
 
 
 void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
-    // TODO: needs to take as parameter the information to pass to the output process.
     /*
      * Actions to perform:
      * 1) Write in output the information. (The integers are kept in the msg output list.)
@@ -242,7 +241,6 @@ void write_output(int pipe_output_read, int pipe_output_write, int* msg_output){
     write(pipe_output_write, eggs_in_the_box, LEN_OF_MESSAGE_TO_OUTPUT);
     write(pipe_output_write, eggs_in_the_warehouse, LEN_OF_MESSAGE_TO_OUTPUT);
     write(pipe_output_write, eggs_to_order, LEN_OF_MESSAGE_TO_OUTPUT);
-    // TODO: to fix the egg to move with the arm.
     write(pipe_output_write, command_to_arm, LEN_OF_MESSAGE_TO_OUTPUT);
 
 }

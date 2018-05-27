@@ -36,25 +36,16 @@ int serial_start (int port_number, int baud)
 
   if (fd == -1)
     return -1;
-  //send init message
-/*  int init_message = 7;
-serialport_write(fd, "7\n");
-  if (serialport_writebyte(fd, init_message) == -1)
-  {
-    serialport_close(fd);
-		return -2;
-  }
-*/
+
   //read init response
   char eolchar = '\n';
   int timeout = 5000;
   char buf[4];
   if (serialport_read_until(fd, buf, eolchar, 4, timeout) < 0) {
-
-    if (serialport_read_until(fd, buf, eolchar, 4, timeout) < 0) {
-    serialport_close(fd);
-		return -3;
-}
+    if (serialport_read_until(fd, buf, eolchar, 4, timeout) < 0) { //a little trick to make things work
+      serialport_close(fd);
+  		return -3;
+    }
   }
 
   if ( buf[0] != '4' || buf[1] != '2' ) {
@@ -84,12 +75,15 @@ int send_message_to_arduino (int fd, int message) {
     if (serialport_writebyte(fd, message_id) == -1) {
       return -2;
     }
-PRINT("serial sent %d id: %d\n", message, message_id);
+
+    PRINT("serial sent %d id: %d\n", message, message_id);
 
     if (serialport_read_until(fd, id_buffer, eolchar, 8, timeout) == -2) {
     	return -4;
     }
-PRINT("serial recived: %s\n", id_buffer);
+
+    PRINT("serial recived: %s\n", id_buffer);
+    
     uint8_t id_return = atoi (id_buffer);
 
     if (id_return != message_id)
