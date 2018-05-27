@@ -93,7 +93,7 @@ unsigned char make_one_byte_from_string(char* str){
     unsigned char res_char;
     if (strlen(str) != 8){
        PRINT("Some error occurred: the input process printed a wrong number of pins status(8 correct, %lu received).\n", strlen(str));
-       exit(1);
+       shutdown();
     }
     else {
         unsigned int res = 0;
@@ -115,6 +115,7 @@ unsigned char make_one_byte_from_string(char* str){
         res_char = res;
         return res_char;
     }
+    return '0';
 }
 
 static int* process_input(char* msg_received){
@@ -139,15 +140,18 @@ static int* process_input(char* msg_received){
 
     PRINT("Manager received : %d\n", byte_received);
     int eggs_in_the_box = count_eggs_in_the_box(byte_received);
-    int eggs_int_the_warehouse = count_eggs_in_the_warehouse(byte_received);
+    int eggs_in_the_warehouse = count_eggs_in_the_warehouse(byte_received);
 
     int eggs_to_move_to_box = 6 - eggs_in_the_box;
+    eggs_to_move_to_box = eggs_to_move_to_box > eggs_in_the_warehouse ? 
+                        eggs_in_the_warehouse : 
+                        eggs_to_move_to_box;
     int eggs_to_order;
-    if (eggs_int_the_warehouse == 3){
+    if (eggs_in_the_warehouse == 3){
         eggs_to_order = 0;
     }
     else {
-        eggs_to_order = eggs_to_move_to_box - eggs_int_the_warehouse;
+        eggs_to_order = 6 - eggs_in_the_box - eggs_to_move_to_box;
         if (eggs_to_order < 0){
             eggs_to_order = 0;
         }
@@ -155,7 +159,7 @@ static int* process_input(char* msg_received){
 
     int* output_msg = malloc(sizeof(int) * 3);
     output_msg[0] = eggs_in_the_box;
-    output_msg[1] = eggs_int_the_warehouse;
+    output_msg[1] = eggs_to_move_to_box;
     output_msg[2] = eggs_to_order;
 
     PRINT("Generated output = %d, %d, %d\n", output_msg[0], output_msg[1], output_msg[2]);
