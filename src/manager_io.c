@@ -94,7 +94,6 @@ static int generate_command_for_arm (unsigned int byte_received, int eggs_in_the
     int counter_of_eggs_moved = 0; // This counter can't be bigger than eggs_in_the_warehouse.
     int res = 0;
     for (i = 0; i<NUMBER_OF_EGGS_IN_THE_BOX; i++){
-        res = res << 1;
         int mask = 1;
         int temp = eggs_to_move & mask;
         if (temp == 0 && counter_of_eggs_moved < eggs_in_the_warehouse){
@@ -102,6 +101,9 @@ static int generate_command_for_arm (unsigned int byte_received, int eggs_in_the
             counter_of_eggs_moved ++;
         }
         eggs_to_move = eggs_to_move >> 1;
+        if (i != NUMBER_OF_EGGS_IN_THE_BOX-1){
+            res = res << 1;
+        }
     }
     return res;
 }
