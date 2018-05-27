@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <string.h>
+
 #include "manager_output.h"
 #include "output_pin.h"
 #include "output_settings.h"
