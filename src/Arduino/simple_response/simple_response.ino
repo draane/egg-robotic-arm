@@ -32,88 +32,87 @@ Servo pinza;
 
 int turn_pos, height_pos, ab_pos = 0;
 
-void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
+
+void setup()
+{ 
+  pinMode(LED_BUILTIN, OUTPUT);
+  Serial.begin(9600); 
   pinza.attach(11);
   pinza.write(5);
 }
 
-void loop() {
-  int turnsteps = Serial.parseInt();
-  while (turnsteps == 0) {
-    turnsteps = Serial.parseInt();
-  }
-  if (turnsteps != 0) {
-    if (turnsteps == -2) {
-      get_the_ball();
-      return;
-    }
-    else if (turnsteps == 1) {
-      //get_the_ball();
-      go_to_egg_1();
-      close_pinza();
-      return;
-    }
-    else if (turnsteps == 2) {
-      //get_the_ball();
-      go_to_egg_2();
-      close_pinza();
-      return;
-    }
-    else if (turnsteps == 3) {
-      //get_the_ball();
-      go_to_egg_3();
-      close_pinza();
-      return;
-    }
-    else if (turnsteps == 4) {
-      //get_the_ball();
-      go_to_egg_4();
-      close_pinza();
-      return;
-    }
-    else if (turnsteps == 5) {
-      //get_the_ball();
-      go_to_egg_5();
-      close_pinza();
-      return;
-    }
-    else if (turnsteps == 6) {
-      //get_the_ball();
-      go_to_egg_6();
-      close_pinza();
-      return;
-    }
 
-    Serial.print("(");
-    Serial.print(turnsteps);
-    Serial.print(", ");
+void loop()  //main loop
+{
+  Serial.println("42"); 
+  
+  int id_message;
+  int old_message = -1;  
+  int inByte;
+  while (true) {
+    if (Serial.available() > 0)
+    {
+      inByte = Serial.read();  
+      id_message = Serial.read();  
+      
+      if (id_message == old_message) //messaggio vecchio, già eseguito
+      { 
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(300);
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(300);
+        digitalWrite(LED_BUILTIN, HIGH);
+        delay(500);
+        digitalWrite(LED_BUILTIN, LOW);
+        
+        Serial.println(id_message);
+      }  
+      else
+      { 
+        //esegui cose
+        sposta(inByte);    
+        Serial.println(id_message);
+        old_message = id_message;    
+      }
+    }
+  
+  delay(100);
   }
-
-  int updownsteps = Serial.parseInt();
-  while (updownsteps == 0) {
-    updownsteps = Serial.parseInt();
-  }
-  if (updownsteps != 0) {
-    Serial.print(updownsteps);
-    Serial.print(", ");
-  }
-
-  int absteps = Serial.parseInt();
-  while (absteps == 0) {
-    absteps = Serial.parseInt();
-  }
-  if (absteps != 0) {
-    Serial.print(absteps);
-    Serial.print(")");
-  }
-  Serial.println();
-  go_to(turnsteps, updownsteps, absteps);
-  // put your main code here, to run repeatedly:
-
 
 }
+
+void sposta(int egg_to_move) {
+  get_the_ball();
+
+  if (egg_to_move == 1) {
+    go_to_egg_1();
+  }
+  else if (egg_to_move == 2) {
+    go_to_egg_2();
+  }
+  else if (egg_to_move == 3) {
+    go_to_egg_3();
+  }
+  else if (egg_to_move == 4) {
+    go_to_egg_4();
+  }
+  else if (egg_to_move == 5) {
+    go_to_egg_5();
+  }
+  else if (egg_to_move == 6) {
+    go_to_egg_6();
+  }
+  else {
+    open_pinza();
+    delay(200);
+  }
+
+  
+  close_pinza();
+
+}
+
+
 void open_pinza() {
   pinza.write(PINZA_ANGLE);
 }
